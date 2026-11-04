@@ -20,7 +20,8 @@ const PEND=['Regra da mesa (proprietário do projeto): a reserva inicial de mana
 /* ===== Estado e persistência ===== */
 /* Versão do formato: 2 = ficha única + rede; 3 = campos narrativos (narr) e registro do cálculo de mana (mana0). */
 const VER=3,NARR=[['conceito','Conceito do personagem'],['aparencia','Aparência'],['objetivos','Objetivos'],['obs','Observações pessoais']];
-const LS='sodual.v1',DEF=()=>({v:VER,chars:[],net:{pos:{},edges:[],people:[]},set:{col:0,theme:"auto",ac:"#7b4be8",nome:"Viajante",img:""}});
+/* LS0 = dados do dispositivo anteriores ao login (nunca apagados nem alterados pela autenticação). LS = chave ativa; com sessão, cada conta usa LS0+'.u.'+id (ver src/auth.js). */
+const LS0='sodual.v1';let LS=LS0;const DEF=()=>({v:VER,chars:[],net:{pos:{},edges:[],people:[]},set:{col:0,theme:"auto",ac:"#7b4be8",nome:"Viajante",img:""}});
 /* Normaliza/migra qualquer objeto de dados (carga inicial e restauração de backup). Nunca descarta dados do usuário sem necessidade. */
 function norm(o){const d=Object.assign(DEF(),o&&typeof o=='object'?o:{});d.chars=Array.isArray(d.chars)?d.chars:[];d.net=Object.assign({pos:{},edges:[],people:[]},d.net||{});d.net.pos=d.net.pos||{};d.net.edges=Array.isArray(d.net.edges)?d.net.edges:[];d.net.people=Array.isArray(d.net.people)?d.net.people:[];d.set=Object.assign(DEF().set,d.set||{});
  if(d.chars.length>1){d.chars.slice(1).forEach(c=>{if(!d.net.people.some(p=>p.id==c.id))d.net.people.push({id:c.id,nome:c.nome,cor:c.cor||"#5ee7ff",img:c.img||""})});d.chars=d.chars.slice(0,1)}
@@ -28,11 +29,16 @@ function norm(o){const d=Object.assign(DEF(),o&&typeof o=='object'?o:{});d.chars
   /* v3: só acrescenta campos ausentes. Reserva (manaMax/mana), núcleo e textos existentes nunca são recalculados nem sobrescritos. */
   const n=c.narr&&typeof c.narr=='object'?c.narr:{};c.narr=Object.fromEntries(NARR.map(([k])=>[k,typeof n[k]=='string'?n[k]:'']).concat(Object.entries(n).filter(([k])=>!NARR.some(x=>x[0]==k))));if(c.nucleo==null)c.nucleo=''});
  ["folders","camp","bes","diario","arsenal"].forEach(k=>delete d[k]);d.v=VER;return d}
-let S=DEF(),RAW=null;try{RAW=localStorage.getItem(LS);if(RAW){const p=JSON.parse(RAW);const old=(p.v||1)<VER;if(old)try{localStorage.setItem(LS+'.bak',RAW)}catch(e){}S=norm(p);if(old)try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}}catch(e){try{localStorage.setItem(LS+'.corrupt',RAW||'')}catch(_){}S=DEF()}
+let S=DEF();
+/* Carrega (e migra, se for de versão anterior) os dados guardados na chave k e passa a salvar nela. Retorna false se a chave não existia. */
+function loadS(k){LS=k;let RAW=null;S=DEF();try{RAW=localStorage.getItem(LS);if(RAW){const p=JSON.parse(RAW);const old=(p.v||1)<VER;if(old)try{localStorage.setItem(LS+'.bak',RAW)}catch(e){}S=norm(p);if(old)try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}}catch(e){try{localStorage.setItem(LS+'.corrupt',RAW||'')}catch(_){}S=DEF()}return RAW!=null}
+loadS(LS0);
 /* Migração: ficha única + pessoas da rede independentes */
 
-let ui={net:{sel:null,edge:null,link:true,k:1,x:0,y:0,dying:null,newId:null},view:"lore",id:null,tab:'ficha',reg:'cabeca',w:null,step:0,pdf:'',rl:{a:'des',s:'Luta',m:0,reg:'',def:0}};
-function save(){try{localStorage.setItem(LS,JSON.stringify(S));(document.getElementById("st")||{}).textContent='✔ salvo '+new Date().toLocaleTimeString().slice(0,5);return true}catch(e){toast('Armazenamento do navegador cheio. Exporte um backup e remova imagens grandes.');return false}}
+const UI0=()=>({net:{sel:null,edge:null,link:true,k:1,x:0,y:0,dying:null,newId:null},view:"lore",id:null,tab:'ficha',reg:'cabeca',w:null,step:0,pdf:'',rl:{a:'des',s:'Luta',m:0,reg:'',def:0}});
+let ui=UI0();
+/* Sem conta aberta (LS vazio) nada é gravado: evita escrever dados de uma conta na chave de outra. */
+function save(){if(!LS)return true;try{localStorage.setItem(LS,JSON.stringify(S));(document.getElementById("st")||{}).textContent='✔ salvo '+new Date().toLocaleTimeString().slice(0,5);return true}catch(e){toast('Armazenamento do navegador cheio. Exporte um backup e remova imagens grandes.');return false}}
 const usage=()=>{let n=0;try{n=new Blob([localStorage.getItem(LS)||'']).size}catch(e){}return n}
 function toast(t){const e=$('#toast');e.textContent=t;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',2500)}
 const cur=()=>S.chars.find(c=>c.id==ui.id);

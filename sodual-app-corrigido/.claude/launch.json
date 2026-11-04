@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "static",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["C:\\Users\\fonte\\AppData\\Local\\Temp\\claude\\423541ab3850329c\\cf1b3e84-873f-4923-834e-2a02d5017fc8\\scratchpad\\serve.js", "C:\\Users\\fonte\\Documents\\GitHub\\SODUAL\\sodual-app-corrigido", "5173"],
+      "port": 5173
+    }
+  ]
+}

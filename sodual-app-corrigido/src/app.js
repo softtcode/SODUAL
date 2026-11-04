@@ -3,7 +3,7 @@ const NAV=m=>[['NAVEGAÇÃO',[['lore','História do RPG','map'],['sheet','Meu pe
 const BN=[['lore','Início','map'],['sheet','Ficha','scroll'],['mochila','Mochila','shield'],['magias','Magias','flame']],BN_IDS=BN.map(x=>x[0]),MORE_ORD=['PERSONAGEM','NAVEGAÇÃO','COMPÊNDIO','SISTEMA'];
 IC.menu='M4 6h16 M4 12h16 M4 18h16';
 const MQ=window.matchMedia?matchMedia('(prefers-color-scheme: light)'):null;
-function applySet(){const r=document.documentElement,t=S.set.theme=='auto'?(MQ&&MQ.matches?'light':'dark'):S.set.theme;r.dataset.theme=t;r.style.setProperty('--ac',S.set.ac||'#7b4be8');const m=document.querySelector('meta[name=theme-color]');m&&m.setAttribute('content',t=='light'?'#ecebf8':'#0b1030')}
+function applySet(){const r=document.documentElement,t=S.set.theme=='auto'?(MQ&&MQ.matches?'light':'dark'):S.set.theme;r.dataset.theme=t;r.style.setProperty('--ac',S.set.ac||'#7b4be8');const m=document.querySelector('meta[name=theme-color]');m&&m.setAttribute('content',t=='light'?'#ecebf8':'#0b1030');try{localStorage.setItem('sodual.tema',JSON.stringify({theme:S.set.theme,ac:S.set.ac}))}catch(e){}}
 MQ&&MQ.addEventListener&&MQ.addEventListener('change',()=>{S.set.theme=='auto'&&applySet()});
 const NEED_CHAR=['hist','mochila','magias','habs'],VIEW={lore:Lore,livro:Book,biblioteca:Lib,perfil:Profile,config:Config,ajuda:Help};
 const More=({c,act,nav,onClose})=>{const r=React.useRef(),u=S.set;
@@ -32,4 +32,5 @@ const App=()=>{const[,t]=React.useReducer(x=>x+1,0),[tip,st]=React.useState(null
  <main id="main" tabIndex="-1" aria-label=${lab} ref=${mr} class=${v=='rede'?'full':''}><${AP} mode="wait"><${MD} key=${v+(v=='sheet'?ui.tab:'')} initial=${{opacity:0,y:8}} animate=${{opacity:1,y:0}} exit=${{opacity:0}}>${body}<//><//></main><${Res}/>
  ${more&&h`<${More} c=${c} act=${act} nav=${mnav} onClose=${()=>smo(false)}/>`}
  <nav class="bn noprint" aria-label="Navegação principal">${BN.map(([id,l,ic])=>h`<button key=${id} class=${'bn-i'+(act==id&&!more?' on':'')} aria-current=${act==id?'page':undefined} onClick=${()=>mnav(id)}><${I} n=${ic} s=${22}/><span>${l}</span></button>`)}<button class=${'bn-i'+(more||inMore?' on':'')} aria-haspopup="dialog" aria-expanded=${more} aria-controls="bs-more" aria-label=${inMore&&!more?'Mais seções (atual: '+lab+')':'Mais seções'} onClick=${()=>{st(null);smo(!more)}}><${I} n="menu" s=${22}/><span>Mais</span></button></nav></div>`};
-ReactDOM.createRoot(document.getElementById('root')).render(h`<${App}/>`);
+/* Gate (src/auth.js) só monta o App depois que o Supabase confirma uma sessão válida. */
+ReactDOM.createRoot(document.getElementById('root')).render(h`<${Gate}/>`);
