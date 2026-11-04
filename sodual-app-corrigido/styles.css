@@ -413,4 +413,42 @@ button.opt{width:100%;text-align:left;font:inherit;color:inherit}button.opt:disa
 }
 @media(max-height:560px) and (max-width:1023px){.au-m{align-items:flex-start;padding-top:12px}.au-br.s{margin-bottom:10px}.au-ic{display:none}}
 .cfg-em{overflow-wrap:anywhere}.cfg-fine{font-size:.82rem;margin:6px 0 0}
-.pf-out{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin:14px 0 4px;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:var(--hov,#ffffff0c)}.pf-out .mut{display:inline-flex;gap:6px;align-items:center;overflow-wrap:anywhere;min-width:0}
+
+/* Arte do login: dragãozinho em pixel art (img real, sem filtro de cor). */
+.au-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 38%;user-select:none}
+.au-ban{display:none}
+@media(min-width:1024px){.au-art{background:#150a2a}.au-art:before{z-index:1;background:linear-gradient(180deg,#0000 0%,#0000 52%,#0c0820b3 76%,#0b0a22f2 100%),linear-gradient(90deg,#0000 78%,#0b0a2266)}.au-art-t{z-index:2}.au-art-t .au-tag{text-shadow:0 1px 3px #000c}}
+@media(max-width:1023px){
+ .au-ban{display:block;position:relative;height:212px;margin:-30px -28px 16px;border-radius:17px 17px 0 0;overflow:hidden;background:#150a2a}
+ .au-ban:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#0000 55%,#0b0a2299)}
+ .au-bimg{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 46%;user-select:none}
+ .au-c:before{z-index:1}
+}
+@media(max-width:599px){.au-bimg{object-position:50% 44%}.au-ban{height:172px;margin:0 0 14px;border-radius:14px;border:1px solid var(--line)}.au-br.s{margin-bottom:14px}}
+@media(max-width:374px){.au-ban{height:128px}.au-bimg{object-position:50% 40%}}
+@media(max-height:560px) and (max-width:1023px){.au-ban{display:none}}
+/* Núcleo, posturas, ataque, progressão e rolagem de mana */
+.nuc-d{display:inline-block;width:12px;height:12px;border-radius:50%;border:1.5px solid var(--gold);vertical-align:-1px;margin-right:6px;flex:none;box-shadow:0 0 6px #0006}
+.nuc-s{display:inline-flex;align-items:center;max-width:100%}.nuc-s select{min-width:0;max-width:100%}.nuc-leg{display:block;margin-top:4px;overflow-wrap:anywhere}
+.prg{white-space:nowrap}.prg b{font-family:Cinzel,serif}.prg small{color:var(--mut)}
+.pst{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.pst button{flex:1 1 90px;min-height:44px}.pst button:disabled{opacity:.45;cursor:not-allowed;text-decoration:line-through}.pst button small{display:block;font-size:.72rem;color:var(--gold)}
+.pst-p{display:flex;align-items:center;gap:8px;min-height:44px}
+.atk{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;margin:8px 0;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--hov,#ffffff0c)}.atk b{font:700 1.05rem Cinzel,serif;color:var(--gold)}.atk small{flex-basis:100%}
+.mr{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--hov,#ffffff0c);margin:10px 0}
+.mr-d{display:grid;gap:6px;margin:0 0 10px}.mr-d div{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}.mr-d dt{min-width:120px;color:var(--mut);font-size:.88rem}.mr-d dd{margin:0}.mr-v b{font:700 1.6rem Cinzel,serif;color:var(--gold)}
+.mr-b .b{min-height:44px}
+
+/* Meu Perfil: bloco da conta (e-mail + sair) e ajustes de toque em telas pequenas */
+.pf-acc{display:flex;align-items:center;justify-content:space-between;gap:12px 16px;margin:14px 0 6px;padding:12px 16px;border:1px solid var(--line);border-radius:12px;background:var(--hov,#ffffff0c);min-width:0}
+.pf-acc-i{display:grid;gap:2px;min-width:0;flex:1 1 auto}.pf-acc-i small{font:600 .72rem/1.2 system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+.pf-em{display:flex;gap:6px;align-items:center;min-width:0;font-size:.92rem}.pf-em svg{flex:none;color:var(--mut)}.pf-em>span{min-width:0;overflow-wrap:anywhere}
+.pf-lo{flex:none;min-height:44px;justify-content:center}
+@media(max-width:599px){
+ .pf-acc{flex-direction:column;align-items:stretch;padding:12px}.pf-lo{width:100%}
+ .pf-dl>div{flex-direction:column;gap:2px;padding:10px 0}.pf-dl dd{text-align:left;overflow-wrap:anywhere}
+ .seg button{min-height:44px}.sw{flex-wrap:wrap;gap:10px}.sw button{width:44px;height:44px}
+ .pf-nm{overflow-wrap:anywhere}
+}@media(pointer:coarse){.seg button{min-height:44px}.sw{flex-wrap:wrap}.sw button{width:44px;height:44px}.pf-nm .b.i{min-width:44px;min-height:44px;justify-content:center}}
+@media(max-width:767px){.cb{grid-template-columns:minmax(0,1fr)}.cb>*{min-width:0}.cb table{font-size:.84rem}.cb td,.cb th{padding:4px 4px}.prg{white-space:normal}.prg small{display:block;font-size:.72rem}.cb .pill{font-size:.7rem;padding:1px 6px}}
+.pst button{flex-direction:column;gap:0;line-height:1.2}.pst button small{white-space:nowrap}@media(max-width:767px){.cb td,.cb th{padding:4px 3px}}
+.sk-r span{min-width:0;overflow-wrap:anywhere}@media(max-width:374px){.sk-r select{width:auto;flex:0 1 8.2rem;min-width:0}.sk-r span{font-size:.86rem}}

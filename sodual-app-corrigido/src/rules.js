@@ -12,11 +12,18 @@ const ORI_DESC={'Nobre':'Pessoa criada em uma família de posição social eleva
 const ORI=Object.keys(ORI_DESC);
 /* Perícias concedidas por cada origem: o livro 0.3 não publica os pacotes. Fica vazio até o autor definir; a validação já impede duplicar com as raciais quando houver. */
 const ORI_PER={};
-const NUC=['Preto','Vermelho Escuro','Vermelho Sólido','Vermelho Claro','Laranja'];
+/* Estágios do núcleo, na ordem da mesa (o livro 0.3 confirma até Laranja; os tons de Laranja e o Branco foram definidos pelo proprietário). Sem efeito mecânico.
+   NUC_LEG: valores gravados por versões anteriores que não têm correspondência exata (o antigo "Laranja" pode ser qualquer um dos três tons) — são preservados e sinalizados, nunca convertidos sozinhos. */
+const NUC=['Preto','Vermelho Escuro','Vermelho Sólido','Vermelho Claro','Laranja Escuro','Laranja Sólido','Laranja Claro','Branco'],
+ NUC_C={'Preto':'#1b1622','Vermelho Escuro':'#6e1420','Vermelho Sólido':'#b3202e','Vermelho Claro':'#e0525c','Laranja Escuro':'#a8480f','Laranja Sólido':'#e2741b','Laranja Claro':'#f6a75a','Branco':'#f4f1ea'},NUC_LEG=['Laranja'];
+const nucleoValido=v=>v===''||NUC.includes(v);
+function setNucleo(c,v){if(!nucleoValido(v))return false;c.nucleo=v;return true}
 const RG={cabeca:['Cabeça',0],tronco:['Tronco',0],bd:['Braço direito',1],be:['Braço esquerdo',1],pd:['Perna direita',1],pe:['Perna esquerda',1]};
 const GN=['Saudável','Leve','Intermediário','Alto','Grave','Fatal'],PEN=[0,0,-1,-2,-3,-3],GC=['#6f8f62','#b9a23c','#d08a2e','#c4552f','#8e1f2a','#2b1114'];
 const NEED={1:[2,3],2:[2,3],3:[2,2],4:[2,2]},POS={Ofensiva:[0,0],Neutra:[2,0],Defensiva:[3,2]};
-const PEND=['Regra da mesa (proprietário do projeto): a reserva inicial de mana usa os dados raciais no valor máximo (Sáelios 24, Arveni 20, Dárnios 16) + Corpo, no lugar da rolagem descrita no livro.','Estágio inicial do núcleo: o livro confirma que a sequência começa em Preto, mas não fixa o estágio de quem é criado. A ficha nova deixa o campo “não registrado” para a mesa definir.','Idade: Blackwood aceita ingresso a partir dos 18 anos; isso não é uma idade mínima para criar personagem.','Pacotes das origens (perícias, arma, habilidade, dinheiro, equipamentos) não estão no livro: ajuste perícias manualmente na ficha.','Não há pontos de vida: o livro usa ferimentos por região (graus Leve a Fatal), por isso a silhueta mostra grau e impactos, não PV.','Gravidade inicial do ferimento e tabela de dano não estão fixadas: você informa o grau do ferimento ao registrá-lo.','Interpretação adotada: ferimento de grau maior que o atual define o grau; igual ou menor soma 1 impacto na progressão da tabela.','Tratamento, estabilização e tempo de sobrevivência do estado Fatal não são regras fechadas.','Armaduras: mecânica suspensa nesta edição (sem bônus).','Dificuldades de testes ficam a critério do mestre.','Cinete, grimório, equipamentos e preços: sem regras numéricas; campos livres.'];
+/* Bônus de ataque por postura (regra da mesa): Ofensiva +2. Aplicado só no cálculo, nunca gravado nos atributos. */
+const ATK_POS={Ofensiva:2,Neutra:0,Defensiva:0};
+const PEND=['Reserva inicial de mana (livro + regra da mesa): rolagem dos dados raciais (Sáelios 6D4, Arveni 5D4, Dárnios 4D4) + Corpo, com até 3 tentativas. Cada nova rolagem descarta definitivamente a anterior; o povo fica travado após a primeira rolagem.','Regra da mesa: a postura Ofensiva concede +2 no ataque.','Estágios do núcleo além de Laranja (Laranja Escuro, Sólido e Claro, Branco) foram definidos pela mesa; o livro 0.3 confirma a sequência só até Laranja. Nenhum estágio tem efeito mecânico.','Estágio inicial do núcleo: o livro confirma que a sequência começa em Preto, mas não fixa o estágio de quem é criado. A ficha nova deixa o campo “não registrado” para a mesa definir.','Idade: Blackwood aceita ingresso a partir dos 18 anos; isso não é uma idade mínima para criar personagem.','Pacotes das origens (perícias, arma, habilidade, dinheiro, equipamentos) não estão no livro: ajuste perícias manualmente na ficha.','Não há pontos de vida: o livro usa ferimentos por região (graus Leve a Fatal), por isso a silhueta mostra grau e impactos, não PV.','Gravidade inicial do ferimento e tabela de dano não estão fixadas: você informa o grau do ferimento ao registrá-lo.','Interpretação adotada (confirmada pela mesa): ferimento de grau maior que o atual define o grau e já conta 1 impacto rumo ao grau seguinte; ferimento igual ou menor soma 1 impacto. Ao agravar por impactos, o contador do novo grau recomeça em 0.','Tratamento, estabilização e tempo de sobrevivência do estado Fatal não são regras fechadas.','Armaduras: mecânica suspensa nesta edição (sem bônus).','Dificuldades de testes ficam a critério do mestre.','Cinete, grimório, equipamentos e preços: sem regras numéricas; campos livres.'];
 /* ===== Estado e persistência ===== */
 /* Versão do formato: 2 = ficha única + rede; 3 = campos narrativos (narr) e registro do cálculo de mana (mana0). */
 const VER=3,NARR=[['conceito','Conceito do personagem'],['aparencia','Aparência'],['objetivos','Objetivos'],['obs','Observações pessoais']];
@@ -27,7 +34,9 @@ function norm(o){const d=Object.assign(DEF(),o&&typeof o=='object'?o:{});d.chars
  if(d.chars.length>1){d.chars.slice(1).forEach(c=>{if(!d.net.people.some(p=>p.id==c.id))d.net.people.push({id:c.id,nome:c.nome,cor:c.cor||"#5ee7ff",img:c.img||""})});d.chars=d.chars.slice(0,1)}
  d.chars.forEach(c=>{c.hist=c.hist||{t:"",html:""};c.bag=c.bag||[];c.magias=c.magias||[];c.habs=c.habs||[];c.sk=c.sk||{};c.money=c.money||[0,0,0];c.w=c.w||{};
   /* v3: só acrescenta campos ausentes. Reserva (manaMax/mana), núcleo e textos existentes nunca são recalculados nem sobrescritos. */
-  const n=c.narr&&typeof c.narr=='object'?c.narr:{};c.narr=Object.fromEntries(NARR.map(([k])=>[k,typeof n[k]=='string'?n[k]:'']).concat(Object.entries(n).filter(([k])=>!NARR.some(x=>x[0]==k))));if(c.nucleo==null)c.nucleo=''});
+  const n=c.narr&&typeof c.narr=='object'?c.narr:{};c.narr=Object.fromEntries(NARR.map(([k])=>[k,typeof n[k]=='string'?n[k]:'']).concat(Object.entries(n).filter(([k])=>!NARR.some(x=>x[0]==k))));if(c.nucleo==null)c.nucleo='';
+  /* Postura: arma pesada só permite Ofensiva (regra aplicada também a fichas antigas); valor desconhecido vira Neutra. */
+  if(!POS[c.post])c.post='Neutra';if(c.pesada&&c.post!='Ofensiva')c.post='Ofensiva'});
  ["folders","camp","bes","diario","arsenal"].forEach(k=>delete d[k]);d.v=VER;return d}
 let S=DEF();
 /* Carrega (e migra, se for de versão anterior) os dados guardados na chave k e passa a salvar nela. Retorna false se a chave não existia. */
@@ -46,11 +55,23 @@ const cur=()=>S.chars.find(c=>c.id==ui.id);
 function roll(a,skill,mod){const sk=(cur()?.sk||{})[skill]||0,n=+a;let d=[];const c=Math.max(n,2);for(let i=0;i<(n>0?n:2);i++)d.push(rnd(20));const k=n>0?Math.max(...d):Math.min(...d);return{d,k,sk,mod:+mod,t:k+sk+ +mod,n}}
 function pen(c,r){return c.w[r].amp?-3:PEN[c.w[r].g]}
 const fatal=c=>Object.values(c.w).some(x=>x.g==5);
-function post(c){let p=c.post;if(c.pesada)return'Ofensiva';if(p=='Defensiva'&&(c.w.bd.g>=3||c.w.be.g>=3))return'Neutra';return p}
+/* ---- Posturas (cap. 19): fonte única para interface, rolagens e carga de fichas ---- */
+/* Posturas que podem ser escolhidas agora. Arma pesada de duas mãos: só Ofensiva. */
+const posturasPermitidas=c=>c.pesada?['Ofensiva']:Object.keys(POS);
+/* Postura efetiva: além da escolha, Alto ou pior em um braço impede a Defensiva (volta à Neutra). */
+function post(c){const p=posturasPermitidas(c).includes(c.post)?c.post:'Ofensiva';if(p=='Defensiva'&&(c.w.bd.g>=3||c.w.be.g>=3))return'Neutra';return p}
+function setPostura(c,p){if(!posturasPermitidas(c).includes(p))return false;c.post=p;return true}
+/* Marcar arma pesada troca para Ofensiva; desmarcar não restaura a postura anterior. */
+function setPesada(c,on){c.pesada=!!on;if(c.pesada)c.post='Ofensiva'}
+const atkPostura=c=>ATK_POS[post(c)]||0;
+/* Modificador de ataque = perícia + bônus da postura (não altera atributos). */
+const atkMod=(c,skill)=>((c.sk||{})[skill]||0)+atkPostura(c);
+/* Contador do próximo grau de uma região: {h,n} ou null quando não há progressão (Saudável ou Fatal). */
+const progresso=(c,r)=>{const w=c.w[r];return w.g>0&&w.g<5?{h:w.h,n:NEED[w.g][RG[r][1]]}:null};
 function wound(c,r,g){const w=c.w[r],l=RG[r][1],L=m=>w.log.unshift(new Date().toLocaleTimeString().slice(0,5)+' — '+m);
  const other=Object.entries(c.w).some(([k,x])=>x.g==5&&k!=r);
  if(other&&g>=3){c.dead=true;L('Ferimento '+GN[g]+' com outra região Fatal: MORTE IMEDIATA');return}
  if(w.g==5&&l&&g<=2){const x=rnd(4);if(x==4){w.amp=1;L('1D4=4: membro amputado')}else L('1D4='+x+': sem amputação');return}
  if(w.g==5){L('Impacto em região Fatal');return}
- if(g>w.g){w.g=g;w.h=0;L('Ferimento '+GN[g])}else{w.h++;const n=NEED[w.g][l];L('Impacto '+w.h+'/'+n+' em '+GN[w.g]);if(w.h>=n){w.g++;w.h=0;L('Agravou para '+GN[w.g])}}}
+ if(g>w.g){w.g=g;w.h=g<5?1:0;L('Ferimento '+GN[g]+(g<5?' — impacto 1/'+NEED[g][l]+' rumo a '+GN[g+1]:''))}else{w.h++;const n=NEED[w.g][l];L('Impacto '+w.h+'/'+n+' em '+GN[w.g]);if(w.h>=n){w.g++;w.h=0;L('Agravou para '+GN[w.g])}}}
 /* ===== Criação de personagem: ver src/creation.js (regras, cálculo de mana e validação global) ===== */

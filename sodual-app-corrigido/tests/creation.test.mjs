@@ -32,8 +32,12 @@ function valido(over = {}) {
   Object.assign(w, { nome: 'Lia', idade: 18, povo: 'Arveni', origem: 'Camponês', hab: 'Leitura Social' });
   w.a = { for: 2, des: 2, cor: 2, car: 1, int: 2 };
   w.per = ['Atletismo', 'Natureza'];
-  return Object.assign(w, over);
+  Object.assign(w, over);
+  if (!('mr' in over) && F.PV[w.povo]) rolarFixo(w, 3);   // reserva rolada e mantida
+  return w;
 }
+/* Rola a mana com dados fixos (rng determinístico) e mantém o resultado. */
+function rolarFixo(w, face, manter = true) { F.rolarMana(w, () => face); if (manter) F.manterMana(w); return w; }
 
 test('1. distribuição normal de 9 pontos é válida', () => {
   const r = F.validateCharacterCreation(valido());
@@ -74,45 +78,51 @@ test('5. pontos não distribuídos impedem a criação', () => {
   assert.equal(r.erros.find(e => e.codigo === 'ATR_PONTOS_RESTANTES').etapa, F.ETAPA.atributos);
 });
 
-test('6. mana base fixa por povo (dados no máximo) e exemplos do proprietário', () => {
-  assert.equal(F.manaBase('Sáelios'), 24);
-  assert.equal(F.manaBase('Arveni'), 20);
-  assert.equal(F.manaBase('Dárnios'), 16);
-  assert.equal(F.calcManaInicial('Sáelios', 3).total, 27);
-  assert.equal(F.calcManaInicial('Arveni', 2).total, 22);
-  assert.equal(F.calcManaInicial('Dárnios', 5).total, 21);
-  const m = F.calcManaInicial('Sáelios', 3);
-  eq({ ...m }, { regra: 'dados-no-maximo', dados: '6D4', base: 24, corpo: 3, total: 27 });
+test('6. mana: fórmula racial (D4 + Corpo) a partir da rolagem registrada', () => {
+  assert.equal(F.manaFormula('Sáelios'), '6D4 + Corpo');
+  assert.equal(F.manaFormula('Arveni'), '5D4 + Corpo');
+  assert.equal(F.manaFormula('Dárnios'), '4D4 + Corpo');
+  eq(F.manaLimites('Sáelios', 3), { min: 9, max: 27 });
+  const w = valido({ mr: undefined }); delete w.mr;
+  assert.equal(F.calcManaInicial(w), null);                 // sem rolagem não há reserva
+  rolarFixo(w, 3);                                          // 5 dados × 3 = 15
+  const m = F.calcManaInicial(w);
+  eq({ ...m, rol: [...m.rol] }, { regra: 'rolagem-3-tentativas', dados: '5D4', rol: [3, 3, 3, 3, 3], base: 15, corpo: 2, total: 17, tentativa: 1, tentativas: 3 });
 });
 
-test('7. cálculo de mana é determinístico e não aceita entradas inválidas', () => {
-  const vals = new Set(Array.from({ length: 50 }, () => F.calcManaInicial('Arveni', 1).total));
-  eq([...vals], [21]);
-  assert.equal(F.calcManaInicial('', 2), null);
-  assert.equal(F.calcManaInicial('Humano', 2), null);
-  assert.equal(F.calcManaInicial('Arveni', 1.5), null);
-  // não há mais campo de rolagem no rascunho
-  assert.equal('dice' in F.newW(), false);
+test('7. mana sem rolagem ou não mantida impede a criação', () => {
+  const w = valido(); delete w.mr;
+  assert.ok(codes(F.validateCharacterCreation(w)).includes('MANA_NAO_ROLADA'));
+  rolarFixo(w, 2, false);
+  assert.ok(codes(F.validateCharacterCreation(w)).includes('MANA_NAO_MANTIDA'));
+  F.manterMana(w);
+  assert.equal(F.validateCharacterCreation(w).ok, true);
+  w.mr.soma = 99;                                           // rolagem adulterada
+  assert.ok(codes(F.validateCharacterCreation(w)).includes('MANA_ROLAGEM_INVALIDA'));
 });
 
-test('8. alterar Corpo recalcula a reserva automaticamente', () => {
+test('8. alterar Corpo recalcula só o total, sem nova rolagem', () => {
   const w = valido();
-  assert.equal(F.calcManaInicial(w.povo, w.a.cor).total, 22);
+  assert.equal(F.calcManaInicial(w).total, 17);
   F.setAtributo(w, 'car', 0); F.setAtributo(w, 'cor', 3);
-  assert.equal(F.calcManaInicial(w.povo, w.a.cor).total, 23);
-  assert.equal(F.mk(w).manaMax, 23);
+  assert.equal(F.calcManaInicial(w).total, 18);
+  assert.equal(w.mr.usadas, 1);
+  assert.equal(F.mk(w).manaMax, 18);
 });
 
-test('9. trocar o povo recalcula a mana e limpa escolhas raciais incompatíveis', () => {
-  const w = valido({ per: ['Atletismo', 'Montaria'], hab: 'Leitura Social' });
+test('9. trocar o povo limpa escolhas raciais; depois da rolagem o povo fica travado', () => {
+  const w = valido({ per: ['Atletismo', 'Montaria'], hab: 'Leitura Social', mr: undefined }); delete w.mr;
   const rem = F.setPovo(w, 'Dárnios');
   eq([...w.per], ['Atletismo']);           // Atletismo existe nas duas listas
   eq([...rem.per], ['Montaria']);
   assert.equal(w.hab, '');
   assert.equal(rem.hab, 'Leitura Social');
-  assert.equal(F.calcManaInicial(w.povo, w.a.cor).total, 18);
   const r = F.validateCharacterCreation(w);
   assert.ok(codes(r).includes('PER_FALTANDO') && codes(r).includes('HAB_AUSENTE'));
+  rolarFixo(w, 4, false);
+  const t = F.setPovo(w, 'Sáelios');
+  assert.equal(t.travado, true); assert.equal(w.povo, 'Dárnios');
+  assert.equal(F.setPovo(w, 'Dárnios').travado, undefined);   // o mesmo povo continua aceito
 });
 
 test('10. Inteligência 0 exige zero perícias raciais', () => {
@@ -187,7 +197,7 @@ test('ficha gerada: sem benefícios não documentados e habilidade sem duplicaç
   assert.equal(c.habs.filter(x => x.cat === 'Habilidade racial').length, 1);
   assert.equal(c.habs[0].nome, 'Leitura Social');
   assert.match(c.habs[0].efe, /sinais de mentira/);
-  assert.equal(c.manaMax, 22); assert.equal(c.mana, 22); assert.equal(c.mana0.base, 20);
+  assert.equal(c.manaMax, 17); assert.equal(c.mana, 17); assert.equal(c.mana0.base, 15); eq(c.mana0.rol, [3, 3, 3, 3, 3]);
   assert.equal(c.narr.conceito, 'Cadete');
   assert.equal(c.hist.html, '<p>Linha 1</p><p>&lt;b&gt;Linha 2&lt;/b&gt;</p>'); // texto escapado
   for (const k of ['nivel', 'classe', 'pv', 'proficiencia', 'dragao']) assert.equal(k in c, false, k);
@@ -195,7 +205,9 @@ test('ficha gerada: sem benefícios não documentados e habilidade sem duplicaç
 
 test('16. salvar e recarregar ficha válida preserva tudo', () => {
   const env = load();
-  const c = env.get('mk')(Object.assign(env.get('newW')(), { nome: 'Ravi', idade: 20, povo: 'Sáelios', origem: 'Erudito', hab: 'Passos Arcanos', a: { for: 1, des: 2, cor: 3, car: 0, int: 3 }, per: ['História', 'Religião', 'Controle de Mana'] }));
+  const w = Object.assign(env.get('newW')(), { nome: 'Ravi', idade: 20, povo: 'Sáelios', origem: 'Erudito', hab: 'Passos Arcanos', a: { for: 1, des: 2, cor: 3, car: 0, int: 3 }, per: ['História', 'Religião', 'Controle de Mana'] });
+  env.get('rolarMana')(w, () => 4); env.get('manterMana')(w);
+  const c = env.get('mk')(w);
   env.ctx.__c = c;
   vm.runInContext('S.chars=[__c]; save()', env.ctx);
   const raw = env.mem['sodual.v1'];

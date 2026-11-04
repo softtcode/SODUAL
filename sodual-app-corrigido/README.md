@@ -38,8 +38,15 @@ O app não tem bundler, então variáveis de ambiente **não** chegam sozinhas a
 
 ## Criação de personagem
 - Toda a validação passa por `validateCharacterCreation(rascunho)` (em `src/creation.js`), que retorna `{ok, erros:[{etapa, campo, codigo, msg}]}`. O botão "Concluir e salvar" só grava fichas válidas.
-- **Regra da mesa (substitui o livro):** a reserva inicial de mana não é rolada. Dados raciais no valor máximo + Corpo: Sáelios 24, Arveni 20, Dárnios 16 (+ Corpo). Função: `calcManaInicial(povo, corpo)`.
-- Fichas antigas mantêm a reserva registrada; nada é recalculado na migração.
+- **Reserva de mana rolada (livro + regra da mesa):** Sáelios 6D4, Arveni 5D4, Dárnios 4D4, + Corpo. Até 3 rolagens (`rolarMana`); cada nova descarta a anterior para sempre, e a terceira é definitiva. "Manter resultado" (`manterMana`) encerra as rolagens. Depois da 1ª rolagem o povo fica travado; mudar Corpo só recalcula o total (`calcManaInicial(rascunho)`).
+- O rascunho da criação fica salvo na conta (`S.wiz`): tentativas e resultado sobrevivem a recarregar a página e a sair da criação. É apagado ao salvar a ficha.
+- Fichas antigas mantêm a reserva registrada (inclusive as da regra anterior, `mana0.regra = 'dados-no-maximo'`); nada é rolado nem recalculado na migração.
+
+## Combate e núcleo (src/rules.js)
+- **Posturas:** `setPostura`, `setPesada`, `posturasPermitidas`, `post` (efetiva). Arma pesada só permite Ofensiva; ao marcá-la, a postura vira Ofensiva, e ao desmarcar nada é restaurado. Fichas salvas com arma pesada e outra postura são corrigidas ao carregar.
+- **Ataque:** a postura Ofensiva dá +2 (`ATK_POS`, `atkPostura`, `atkMod`), aplicado só no cálculo; perícias e atributos não mudam.
+- **Ferimentos:** cada região tem contador próprio (`progresso`). Um ferimento de grau maior define o grau e já conta 1 impacto rumo ao seguinte; ao agravar por impactos o contador recomeça em 0. Impactos necessários: tabela do cap. 20 (`NEED`).
+- **Núcleo:** Preto, Vermelho Escuro, Vermelho Sólido, Vermelho Claro, Laranja Escuro, Laranja Sólido, Laranja Claro, Branco (`NUC`, `setNucleo`). O antigo "Laranja" é preservado e sinalizado na ficha até o jogador escolher o tom; nunca é convertido automaticamente.
 
 ## Testes
 Requer Node 18+ (sem dependências):
