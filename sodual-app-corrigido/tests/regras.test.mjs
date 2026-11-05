@@ -88,11 +88,11 @@ test('primeiro ferimento conta 1 impacto; contagem segue a tabela do livro', () 
   eq(F.progresso(c, 'cabeca'), { h: 1, n: 2 });      // 1/2 rumo a Intermediário
   F.wound(c, 'cabeca', 1);
   assert.equal(c.w.cabeca.g, 2);                     // agravou
-  eq(F.progresso(c, 'cabeca'), { h: 0, n: 2 });      // novo estágio recomeça em 0
+  eq(F.progresso(c, 'cabeca'), { h: 1, n: 2 });      // o próprio estado conta como 1
   F.wound(c, 'bd', 1);
   eq(F.progresso(c, 'bd'), { h: 1, n: 3 });          // membros: 3 impactos
   F.wound(c, 'bd', 1); eq(F.progresso(c, 'bd'), { h: 2, n: 3 });
-  F.wound(c, 'bd', 1); assert.equal(c.w.bd.g, 2); eq(F.progresso(c, 'bd'), { h: 0, n: 3 });
+  F.wound(c, 'bd', 1); assert.equal(c.w.bd.g, 2); eq(F.progresso(c, 'bd'), { h: 1, n: 3 }); // membros: 3 Intermediários para Alto
 });
 
 test('contadores independentes: uma região não altera a outra', () => {
@@ -111,13 +111,16 @@ test('ferimento mais grave redefine o grau e conta 1 rumo ao próximo; Fatal nã
   F.wound(c, 'tronco', 1);
   F.wound(c, 'tronco', 4);
   assert.equal(c.w.tronco.g, 4); eq(F.progresso(c, 'tronco'), { h: 1, n: 2 });
-  F.wound(c, 'tronco', 2);
+  F.wound(c, 'tronco', 2);                           // grau menor: registrado, sem progressão
+  assert.equal(c.w.tronco.g, 4); eq(F.progresso(c, 'tronco'), { h: 1, n: 2 });
+  F.wound(c, 'tronco', 4);
   assert.equal(c.w.tronco.g, 5); eq(F.progresso(c, 'tronco'), null);
 });
 
 /* ===== Núcleos ===== */
 test('núcleo: oito estágios na ordem exata, só valores válidos', () => {
-  eq(F.NUC, ['Preto', 'Vermelho Escuro', 'Vermelho Sólido', 'Vermelho Claro', 'Laranja Escuro', 'Laranja Sólido', 'Laranja Claro', 'Branco']);
+  eq(F.NUC, ['Preto', 'Vermelho Escuro', 'Vermelho Sólido', 'Vermelho Claro', 'Laranja Escuro', 'Laranja Sólido', 'Laranja Claro', 'Amarelo Escuro', 'Amarelo Sólido', 'Amarelo Claro', 'Prata Escura', 'Prata Sólida', 'Prata Clara', 'Branco']);
+  assert.equal(F.NUC_INI, 'Preto');
   for (const n of F.NUC) assert.ok(F.NUC_C[n], 'cor de ' + n);
   const c = ficha({ nucleo: '' });
   assert.equal(F.setNucleo(c, 'Laranja Claro'), true); assert.equal(c.nucleo, 'Laranja Claro');
@@ -139,7 +142,7 @@ test('núcleo antigo é preservado sem conversão automática', () => {
 
 /* ===== Mana: rolagem com até 3 tentativas ===== */
 test('fórmulas raciais e limites dos resultados', () => {
-  for (const [p, d] of [['Sáelios', 6], ['Arveni', 5], ['Dárnios', 4]]) {
+  for (const [p, d] of [['Sáelios', 4], ['Arveni', 3], ['Dárnios', 2]]) {
     assert.equal(F.manaFormula(p), d + 'D4 + Corpo');
     const w = rascunho(); w.povo = p;
     for (let i = 0; i < 200; i++) {
@@ -155,12 +158,12 @@ test('fórmulas raciais e limites dos resultados', () => {
 
 test('no máximo três rolagens; cada nova substitui a anterior para sempre', () => {
   const w = rascunho();
-  F.rolarMana(w, seq([4])); assert.equal(F.calcManaInicial(w).total, 22);   // 20 + 2
-  F.rolarMana(w, seq([1])); assert.equal(F.calcManaInicial(w).total, 7);    // 5 + 2: o 22 se perdeu
+  F.rolarMana(w, seq([4])); assert.equal(F.calcManaInicial(w).total, 14);   // 12 + 2
+  F.rolarMana(w, seq([1])); assert.equal(F.calcManaInicial(w).total, 5);    // 3 + 2: o 14 se perdeu
   assert.equal(w.mr.usadas, 2); assert.equal(w.mr.ok, false);
-  assert.equal(JSON.stringify(w).includes('[4,4,4,4,4]'), false);             // descartado não fica guardado
+  assert.equal(JSON.stringify(w).includes('[4,4,4]'), false);             // descartado não fica guardado
   F.rolarMana(w, seq([2]));
-  assert.equal(F.calcManaInicial(w).total, 12);
+  assert.equal(F.calcManaInicial(w).total, 8);
   assert.equal(w.mr.usadas, 3); assert.equal(w.mr.ok, true);                 // terceira é definitiva
   assert.equal(F.rolarMana(w).ok, false);
   assert.equal(F.manaRestantes(w), 0);
@@ -182,7 +185,7 @@ test('tentativas persistem ao salvar e recarregar o rascunho', () => {
   const e2 = load(e.mem);
   vm.runInContext('loadS("sodual.v1.u.t")', e2.ctx);
   const w = e2.get('S.wiz');
-  eq({ usadas: w.mr.usadas, soma: w.mr.soma, ok: w.mr.ok }, { usadas: 2, soma: 12, ok: false });
+  eq({ usadas: w.mr.usadas, soma: w.mr.soma, ok: w.mr.ok }, { usadas: 2, soma: 6, ok: false });
   assert.equal(e2.get('rolarMana(S.wiz,()=>1)').ok, true);
   assert.equal(e2.get('rolarMana(S.wiz,()=>1)').ok, false);                  // só restava 1 tentativa
   assert.equal(e2.get('setPovo(S.wiz,"Sáelios")').travado, true);            // trocar o povo não reinicia
@@ -204,8 +207,8 @@ test('ficha criada registra a rolagem e a tentativa usada', () => {
   F.rolarMana(w, seq([1, 2, 3, 4]));
   F.manterMana(w);
   const c = F.mk(w);
-  eq(c.mana0.rol, [1, 2, 3, 4, 1]);
-  assert.equal(c.manaMax, 11 + 2);
+  eq(c.mana0.rol, [1, 2, 3]);
+  assert.equal(c.manaMax, 6 + 2);
   assert.equal(c.mana0.tentativa, 1);
   assert.equal('mr' in c, false);
 });

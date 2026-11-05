@@ -116,7 +116,7 @@ function mk(w){const v=validateCharacterCreation(w);if(!v.ok){const x=new Error(
  const sk={};w.per.forEach(p=>sk[p]=2);periciasOrigem(w.origem).forEach(p=>{if(!(p in sk))sk[p]=2});
  const m=calcManaInicial(w),hb=habilidadeRacial(w.povo,w.hab),n=w.narr||{};
  return{id:uid(),nome:w.nome.trim(),idade:w.idade,povo:w.povo,origem:w.origem,cor:'#7a3436',img:'',a:{...w.a},
-  manaMax:m.total,mana:m.total,mana0:m,nucleo:'',sk,hab:hb[0],
+  manaMax:m.total,mana:m.total,mana0:m,nucleo:NUC_INI,sk,hab:hb[0],
   narr:Object.fromEntries(NARR.map(([k])=>[k,String(n[k]||'').trim()])),
-  w:Object.fromEntries(Object.keys(RG).map(k=>[k,{g:0,h:0,amp:0,log:[]}])),post:'Neutra',pesada:false,notes:'',inv:'',
+  w:Object.fromEntries(Object.keys(RG).map(k=>[k,normReg({},k)])),cb:[],post:'Neutra',pesada:false,notes:'',inv:'',
   hist:{t:'',html:txtParaHtml(n.historia)},bag:[],magias:[],habs:[{id:uid(),nome:hb[0],cat:'Habilidade racial',efe:hb[1],racial:true}],eq:'',cin:'',money:[0,0,0],dead:false}}

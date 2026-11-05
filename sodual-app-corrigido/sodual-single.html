@@ -157,7 +157,18 @@ main:focus{outline:0}
 .sil .rg.sel{filter:url(#glw)}
 .sil .rg.sel .rg-o{stroke:var(--gold);stroke-opacity:1;stroke-width:3.2}
 .sil .rg:focus-visible .rg-o{stroke:var(--ring);stroke-opacity:1;stroke-width:3.6}
-.sil .rg.amp .rg-f{opacity:.3}.sil .rg.amp .rg-o{stroke-dasharray:5 4}
+/* Membro amputado: ausente — sem preenchimento nem sombreado, só um contorno tracejado fraco para manter a região identificável e clicável. */
+.sil .rg.amp .rg-f.rg-ghost{fill:transparent;opacity:1}.sil .rg.amp .rg-o{stroke-dasharray:4 5;stroke-opacity:.38;stroke-width:1.3}
+.sil .rg.amp:hover .rg-o{stroke-opacity:.7}.sil .rg.amp.sel .rg-o{stroke-dasharray:4 5;stroke-opacity:.9}
+.sil .rg.amp .rg-b circle:not(.rg-p){fill:#5a0f18}
+.sil-lg i.sil-lg-amp{background:transparent;border:1px dashed var(--mut)}
+.rp .ch{font-size:.72rem;vertical-align:middle;margin-left:6px}
+.fer-rec{display:block;margin-top:4px}
+.note.crit-n{border-left-color:#ff5a5a}
+.note.ev{margin-top:6px}.note.ev.bad,.note.morte{border-left-color:#ff5a5a}
+.note.morte{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center}
+.b.dng{border-color:#c4413a99}.b.dng:hover{border-color:#c4413a;color:#ff9aae}[data-theme=light] .b.dng:hover{color:#a3221c}
+.cbh ol{list-style:none;margin:0;padding:0;display:grid;gap:6px}.cbh li{font-size:.85rem;line-height:1.35;padding:6px 8px;border-left:3px solid var(--line);background:var(--hov,#ffffff0c);border-radius:0 8px 8px 0;overflow-wrap:anywhere}.cbh li.bad{border-left-color:#ff5a5a}
 .sil .rg-b circle:not(.rg-p){fill:#0b1030;fill-opacity:.82;stroke:#fff;stroke-opacity:.85;stroke-width:1.4}
 .sil .rg-b text{fill:#fff;font:700 10px sans-serif}
 .sil .rg-p{fill:none;stroke:#ff5a5a;stroke-width:2;transform-box:fill-box;transform-origin:center;animation:sp 1.8s ease-out infinite}
@@ -170,6 +181,26 @@ main:focus{outline:0}
 .sh-h:before{content:"";position:absolute;left:-20px;right:-20px;top:-20px;bottom:0;z-index:-1;background:radial-gradient(60% 120% at 0 0,color-mix(in srgb,var(--c) 38%,transparent),#0000),radial-gradient(50% 100% at 100% 0,#1aa6c922,#0000)}
 .sh-av{position:relative;cursor:pointer;flex:none}.sh-av .av{width:104px;height:104px;border-width:4px;box-shadow:0 10px 28px -8px #000a,0 0 28px -8px var(--c)}.sh-av .pf-cam{width:30px;height:30px;right:0;bottom:2px;border-width:2px}
 .sh-av:focus-within .pf-cam{outline:2px solid var(--ring)}
+button.sh-av{border:0;background:none;padding:0;color:inherit;font:inherit;border-radius:50%}button.sh-av:focus-visible{outline:2px solid var(--ring);outline-offset:3px}
+/* ===== Enquadramento de imagens ===== */
+.av-w{position:relative;display:inline-flex;flex:none}
+.av-adj{position:absolute;left:6px;bottom:8px;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;padding:0;cursor:pointer;background:#141a45;color:#fff;border:3px solid var(--bg);box-shadow:0 4px 12px #0007;transition:transform .2s}
+.av-adj:hover{transform:scale(1.1)}.av-adj:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+.sh-h .av-adj{width:30px;height:30px;left:0;bottom:2px;border-width:2px}
+.cr{display:flex;flex-direction:column;align-items:center;gap:12px;padding:4px 0 12px}
+.cr-f{position:relative;width:min(100%,340px);overflow:hidden;border-radius:12px;background:#05082099;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;outline-offset:3px}
+.cr-f:active{cursor:grabbing}.cr-f.cr-ld{cursor:progress}
+.cr-i{position:absolute;left:0;top:0;max-width:none!important;max-height:none!important;pointer-events:none;user-select:none;-webkit-user-drag:none}
+.cr-f .cr-m{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 0 2px #ffffffcc;border-radius:12px}
+.cr-f.cr-rd .cr-m{border-radius:50%;box-shadow:0 0 0 999px #050820a8,inset 0 0 0 2px #ffffffcc}
+.cr-w{position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:.9rem}
+.cr-z{display:flex;align-items:center;gap:10px;width:min(100%,340px)}.cr-z input[type=range]{flex:1;min-width:0;accent-color:var(--ac);height:28px}
+.cr-pv{display:flex;align-items:center;gap:12px}
+/* Anel por box-shadow (não borda): com box-sizing:border-box a borda encolheria a área interna e desalinharia a imagem calculada para o tamanho total. */
+.cr-p{position:relative;overflow:hidden;display:inline-block;background:#ffffff14;box-shadow:0 0 0 2px var(--gold);border-radius:8px;flex:none}.cr-p.cr-rd{border-radius:50%}
+.cr-dc{text-align:center;max-width:340px}
+.cr-ac{justify-content:flex-end}
+@media(max-width:767px){.cr-f,.cr-z{width:min(100%,82vw)}.cr-ac .b{min-height:44px}.sh-h .av-adj{width:26px;height:26px;left:-4px;bottom:0}}
 .sh-t{flex:1;min-width:230px}.sh-nm{font:700 2rem Cinzel,serif;color:var(--red);background:none;border:0;border-bottom:1px solid transparent;border-radius:0;padding:0;width:100%;max-width:520px;letter-spacing:.05em}.sh-nm:hover,.sh-nm:focus{border-bottom-color:var(--line);background:none}
 .sh-sub{margin:0 0 8px;color:var(--mut)}.ch.bad{background:#b3261e;color:#fff;border-color:#b3261e}
 .sh-ac{display:flex;gap:6px;flex-wrap:wrap}
@@ -187,8 +218,8 @@ main:focus{outline:0}
 .mny{gap:14px}.mny label{display:flex;align-items:center;gap:6px}.mny input{width:70px}
 .rp{margin-top:14px;padding:12px 14px 12px 16px;border-left:5px solid var(--rc);background:var(--hov);border-radius:0 12px 12px 0}.rp h2:after{display:none}
 .cb{display:grid;grid-template-columns:minmax(260px,330px) minmax(0,1fr) minmax(0,1fr);gap:32px;align-items:start}.cb-l{position:sticky;top:16px}
-@media(max-width:1150px){.sh-2{grid-template-columns:1fr}.cb{grid-template-columns:minmax(250px,320px) minmax(0,1fr)}.cb-r{grid-column:1/-1}}
-@media(max-width:767px){.sh-g,.cb{grid-template-columns:1fr}.sh-l,.cb-l{position:static}.sh-at{grid-template-columns:repeat(5,minmax(0,1fr))}.sk-r select{width:9.5rem}.sh-h{gap:14px}.sh-nm{font-size:1.5rem}.cb-r{grid-column:auto}}
+@media(max-width:1150px){.sh-2{grid-template-columns:1fr}.cb{grid-template-columns:minmax(250px,320px) minmax(0,1fr)}.cb-l{grid-row:1/span 2}.cb-r{grid-column:2}}
+@media(max-width:767px){.sh-g,.cb{grid-template-columns:1fr}.sh-l,.cb-l{position:static}.sh-at{grid-template-columns:repeat(5,minmax(0,1fr))}.sk-r select{width:9.5rem}.sh-h{gap:14px}.sh-nm{font-size:1.5rem}.cb-r{grid-column:auto}.cb-l{grid-row:auto}}
 @media(min-width:768px) and (max-width:1023px){.sh-g{grid-template-columns:minmax(210px,250px) minmax(0,1fr);gap:22px}.cb{grid-template-columns:minmax(220px,270px) minmax(0,1fr);gap:22px}}
 /* Atributos: o rótulo se adapta à largura real do bloco (não do dispositivo); abaixo de 440px usa a sigla e mantém o nome completo para leitores de tela. */
 .sh-at{container-type:inline-size}.at .at-a{display:none}
@@ -470,26 +501,29 @@ const AT=[['for','Força'],['des','Destreza'],['cor','Corpo'],['car','Carisma'],
 const SK={Atletismo:'for',Acrobacia:'des',Furtividade:'des','Prestidigitação':'des','História':'int','Controle de Mana':'cor','Investigação':'int',Natureza:'int','Religião':'int','Intuição':'int','Trato com Criaturas':'car',Medicina:'int','Percepção':'int','Atuação':'car','Enganação':'car','Intimidação':'car','Persuasão':'car',Montaria:'des',Luta:'for',Pontaria:'des'};
 const GRD=[['Não treinado',0],['Apto',2],['Treinado',3],['Excepcional',5]];
 /* Povos (cap. 16). d = quantidade de D4 raciais (cap. 10). Efeitos das habilidades transcritos do livro, com limites de uso preservados. */
-const PV={'Sáelios':{d:6,per:['Controle de Mana','História','Investigação','Intuição','Percepção','Religião','Medicina'],hab:[['Sensibilidade Mágica','+1 em testes destinados a perceber ou identificar manifestações de mana.'],['Afinidade Arcana','Uma vez por cena, +2 em um teste de Controle de Mana.'],['Percepção do Fluxo','Ao observar alguém usando magia, pode tentar reconhecer alterações no fluxo de mana e características gerais da manifestação. Não revela automaticamente todas as capacidades do alvo.'],['Passos Arcanos','O deslocamento padrão aumenta de 9 para 12 metros por turno.']]},
-Arveni:{d:5,per:['Atletismo','Acrobacia','Persuasão','Intuição','Medicina','Natureza','Montaria'],hab:[['Reflexos Condicionados','+1 em testes para recuperar o equilíbrio após queda, escorregão ou impacto que comprometa a estabilidade.'],['Resistência Adaptativa','+1 em testes para resistir a esforços físicos prolongados.'],['Leitura Social','+1 em testes de Intuição destinados a interpretar emoções, intenções, desconfortos ou sinais de mentira.']]},
-'Dárnios':{d:4,per:['Atletismo','Prestidigitação','Intimidação','Medicina','Natureza','Trato com Criaturas','Percepção'],hab:[['Estrutura Robusta','+1 em testes para resistir a empurrões, quedas e deslocamentos forçados.'],['Mãos Firmes','+1 em testes de trabalho manual de precisão ou manuseio de ferramentas.'],['Firmeza Dárnia','Uma vez por cena, +2 em teste para resistir a esforço intenso ou manter posição diante de força externa.']]}};
+/* Dados raciais da reserva inicial (regra atual da mesa): Sáelios 4D4, Arveni 3D4, Dárnios 2D4. Fichas já criadas mantêm a reserva registrada. */
+const PV={'Sáelios':{d:4,per:['Controle de Mana','História','Investigação','Intuição','Percepção','Religião','Medicina'],hab:[['Sensibilidade Mágica','+1 em testes destinados a perceber ou identificar manifestações de mana.'],['Afinidade Arcana','Uma vez por cena, +2 em um teste de Controle de Mana.'],['Percepção do Fluxo','Ao observar alguém usando magia, pode tentar reconhecer alterações no fluxo de mana e características gerais da manifestação. Não revela automaticamente todas as capacidades do alvo.'],['Passos Arcanos','O deslocamento padrão aumenta de 9 para 12 metros por turno.']]},
+Arveni:{d:3,per:['Atletismo','Acrobacia','Persuasão','Intuição','Medicina','Natureza','Montaria'],hab:[['Reflexos Condicionados','+1 em testes para recuperar o equilíbrio após queda, escorregão ou impacto que comprometa a estabilidade.'],['Resistência Adaptativa','+1 em testes para resistir a esforços físicos prolongados.'],['Leitura Social','+1 em testes de Intuição destinados a interpretar emoções, intenções, desconfortos ou sinais de mentira.']]},
+'Dárnios':{d:2,per:['Atletismo','Prestidigitação','Intimidação','Medicina','Natureza','Trato com Criaturas','Percepção'],hab:[['Estrutura Robusta','+1 em testes para resistir a empurrões, quedas e deslocamentos forçados.'],['Mãos Firmes','+1 em testes de trabalho manual de precisão ou manuseio de ferramentas.'],['Firmeza Dárnia','Uma vez por cena, +2 em teste para resistir a esforço intenso ou manter posição diante de força externa.']]}};
 /* As 17 origens reconhecidas (cap. 17), com o significado narrativo do livro. Nenhum benefício mecânico: os pacotes não foram publicados. */
 const ORI_DESC={'Nobre':'Pessoa criada em uma família de posição social elevada, familiarizada com ambientes de influência e relações entre casas importantes.','Linhagem Militar':'Pessoa formada em um ambiente familiar de disciplina e tradição militar, com contato com a organização do serviço e do combate.','Camponês':'Pessoa que cresceu em comunidade rural e conviveu com rotinas de trabalho físico e atividades práticas.','Família Mercante':'Pessoa criada junto a atividades de comércio, negociação, circulação de produtos e relações mercantis.','Submundo':'Pessoa que teve sua formação pessoal próxima a redes informais ou atividades clandestinas.','Filho dos Marcados':'Descendente de participantes da traição ocorrida há aproximadamente dez anos, poupado das punições aplicadas aos adultos envolvidos. Carrega o estigma da família, mas a origem não determina culpa, caráter nem escolhas.','Erudito':'Pessoa criada em um contexto que valorizou estudos, pesquisa, documentação e aprendizagem intelectual.','Aprendiz de Ofício':'Pessoa que passou parte de sua juventude aprendendo uma atividade manual ou técnica.','Aprendiz de Curandeiro':'Pessoa que teve contato com cuidados básicos de saúde e práticas de tratamento.','Criado pela Fé':'Pessoa formada em ambiente religioso e familiarizada com crenças e ensinamentos de sua comunidade (em Bevon, predomina a fé na Mãe).','Fronteiriço':'Pessoa que cresceu próxima a áreas de risco ou regiões de fronteira, em contato com as exigências desse ambiente.','Marinheiro':'Pessoa com trajetória ligada a embarcações e ao cotidiano da navegação.','Nômade ou Viajante':'Pessoa criada em deslocamentos frequentes ou na convivência com diferentes lugares.','Caçador':'Pessoa familiarizada com observação de animais e atividades de rastreamento.','Prodígio':'Pessoa que manifestou facilidade excepcional em alguma área desde cedo, sem possuir automaticamente domínio universal.','Criado em Instituição':'Pessoa que cresceu em abrigo ou outro ambiente coletivo de convivência organizada.','Criado entre Cavaleiros':'Pessoa que passou parte de sua vida próxima a cavaleiros e à tradição dracônica de Bevon.'};
 const ORI=Object.keys(ORI_DESC);
 /* Perícias concedidas por cada origem: o livro 0.3 não publica os pacotes. Fica vazio até o autor definir; a validação já impede duplicar com as raciais quando houver. */
 const ORI_PER={};
-/* Estágios do núcleo, na ordem da mesa (o livro 0.3 confirma até Laranja; os tons de Laranja e o Branco foram definidos pelo proprietário). Sem efeito mecânico.
+/* Estágios do núcleo, na ordem da mesa (o livro 0.3 confirma até Laranja; os tons de Laranja, Amarelo e Prata e o Branco foram definidos pelo proprietário). Toda ficha nova começa em Preto (NUC_INI). Sem efeito mecânico.
    NUC_LEG: valores gravados por versões anteriores que não têm correspondência exata (o antigo "Laranja" pode ser qualquer um dos três tons) — são preservados e sinalizados, nunca convertidos sozinhos. */
-const NUC=['Preto','Vermelho Escuro','Vermelho Sólido','Vermelho Claro','Laranja Escuro','Laranja Sólido','Laranja Claro','Branco'],
- NUC_C={'Preto':'#1b1622','Vermelho Escuro':'#6e1420','Vermelho Sólido':'#b3202e','Vermelho Claro':'#e0525c','Laranja Escuro':'#a8480f','Laranja Sólido':'#e2741b','Laranja Claro':'#f6a75a','Branco':'#f4f1ea'},NUC_LEG=['Laranja'];
+const NUC=['Preto','Vermelho Escuro','Vermelho Sólido','Vermelho Claro','Laranja Escuro','Laranja Sólido','Laranja Claro','Amarelo Escuro','Amarelo Sólido','Amarelo Claro','Prata Escura','Prata Sólida','Prata Clara','Branco'],NUC_INI='Preto',
+ NUC_C={'Preto':'#1b1622','Vermelho Escuro':'#6e1420','Vermelho Sólido':'#b3202e','Vermelho Claro':'#e0525c','Laranja Escuro':'#a8480f','Laranja Sólido':'#e2741b','Laranja Claro':'#f6a75a','Amarelo Escuro':'#a8860c','Amarelo Sólido':'#e8c21c','Amarelo Claro':'#f7e27a','Prata Escura':'#7d8590','Prata Sólida':'#b4bcc6','Prata Clara':'#dde2e8','Branco':'#f4f1ea'},NUC_LEG=['Laranja'];
 const nucleoValido=v=>v===''||NUC.includes(v);
 function setNucleo(c,v){if(!nucleoValido(v))return false;c.nucleo=v;return true}
 const RG={cabeca:['Cabeça',0],tronco:['Tronco',0],bd:['Braço direito',1],be:['Braço esquerdo',1],pd:['Perna direita',1],pe:['Perna esquerda',1]};
 const GN=['Saudável','Leve','Intermediário','Alto','Grave','Fatal'],PEN=[0,0,-1,-2,-3,-3],GC=['#6f8f62','#b9a23c','#d08a2e','#c4552f','#8e1f2a','#2b1114'];
+/* Ocorrências do grau atual necessárias para avançar: [cabeça/tronco, membros]. Regra geral: 2 graus iguais.
+   Exceções nos braços e pernas: Leve → Intermediário exige 3 Leves e Intermediário → Alto exige 3 Intermediários. O próprio estado conta como 1 (ao chegar a um grau, o contador começa em 1). */
 const NEED={1:[2,3],2:[2,3],3:[2,2],4:[2,2]},POS={Ofensiva:[0,0],Neutra:[2,0],Defensiva:[3,2]};
 /* Bônus de ataque por postura (regra da mesa): Ofensiva +2. Aplicado só no cálculo, nunca gravado nos atributos. */
 const ATK_POS={Ofensiva:2,Neutra:0,Defensiva:0};
-const PEND=['Reserva inicial de mana (livro + regra da mesa): rolagem dos dados raciais (Sáelios 6D4, Arveni 5D4, Dárnios 4D4) + Corpo, com até 3 tentativas. Cada nova rolagem descarta definitivamente a anterior; o povo fica travado após a primeira rolagem.','Regra da mesa: a postura Ofensiva concede +2 no ataque.','Estágios do núcleo além de Laranja (Laranja Escuro, Sólido e Claro, Branco) foram definidos pela mesa; o livro 0.3 confirma a sequência só até Laranja. Nenhum estágio tem efeito mecânico.','Estágio inicial do núcleo: o livro confirma que a sequência começa em Preto, mas não fixa o estágio de quem é criado. A ficha nova deixa o campo “não registrado” para a mesa definir.','Idade: Blackwood aceita ingresso a partir dos 18 anos; isso não é uma idade mínima para criar personagem.','Pacotes das origens (perícias, arma, habilidade, dinheiro, equipamentos) não estão no livro: ajuste perícias manualmente na ficha.','Não há pontos de vida: o livro usa ferimentos por região (graus Leve a Fatal), por isso a silhueta mostra grau e impactos, não PV.','Gravidade inicial do ferimento e tabela de dano não estão fixadas: você informa o grau do ferimento ao registrá-lo.','Interpretação adotada (confirmada pela mesa): ferimento de grau maior que o atual define o grau e já conta 1 impacto rumo ao grau seguinte; ferimento igual ou menor soma 1 impacto. Ao agravar por impactos, o contador do novo grau recomeça em 0.','Tratamento, estabilização e tempo de sobrevivência do estado Fatal não são regras fechadas.','Armaduras: mecânica suspensa nesta edição (sem bônus).','Dificuldades de testes ficam a critério do mestre.','Cinete, grimório, equipamentos e preços: sem regras numéricas; campos livres.'];
+const PEND=['Reserva inicial de mana (livro + regra da mesa): rolagem dos dados raciais (Sáelios 4D4, Arveni 3D4, Dárnios 2D4) + Corpo, com até 3 tentativas. Cada nova rolagem descarta definitivamente a anterior; o povo fica travado após a primeira rolagem.','Regra da mesa: a postura Ofensiva concede +2 no ataque.','Estágios do núcleo além de Laranja (Laranja Escuro, Sólido e Claro; Amarelo Escuro, Sólido e Claro; Prata Escura, Sólida e Clara; Branco) foram definidos pela mesa; o livro 0.3 confirma a sequência só até Laranja. Nenhum estágio tem efeito mecânico.','Estágio inicial do núcleo: Preto. Toda ficha nova começa nele; fichas antigas sem estágio registrado não são alteradas.','Idade: Blackwood aceita ingresso a partir dos 18 anos; isso não é uma idade mínima para criar personagem.','Pacotes das origens (perícias, arma, habilidade, dinheiro, equipamentos) não estão no livro: ajuste perícias manualmente na ficha.','Não há pontos de vida: o livro usa ferimentos por região (graus Leve a Fatal), por isso a silhueta mostra grau e impactos, não PV.','Gravidade inicial do ferimento e tabela de dano não estão fixadas: você informa o grau do ferimento ao registrá-lo.','Progressão: dois graus iguais formam o grau seguinte (Leve + Leve = Intermediário; Intermediário + Intermediário = Alto; Alto + Alto = Grave; Grave + Grave = Fatal). Exceção nos braços e pernas: 3 Leves formam Intermediário e 3 Intermediários formam Alto; de Alto em diante também bastam 2 graus iguais. O próprio estado conta como um ferimento do seu grau: ao chegar a um grau, a progressão para o seguinte já começa em 1. Ferimento de grau menor fica acumulado na região; quando junta a quantidade exigida para o seu grau, forma 1 ferimento do grau seguinte, que volta a contar (ex.: tronco Intermediário + Leve + Leve = Alto). Cada ferimento é usado uma só vez.','Regra da mesa: ferimento de grau maior que o atual define o grau e já conta 1 rumo ao grau seguinte; os ferimentos do grau anterior continuam no acumulador da região.','Fatal não mata sozinho. Morte imediata: já existir região Fatal e outra região receber ferimento Alto ou pior.','Desmembramento: braço ou perna já Fatal que recebe ferimento Leve ou Intermediário rola 1D4; no 4 o membro é amputado. Não vale para cabeça e tronco.','Tratamento, estabilização e tempo de sobrevivência do estado Fatal não são regras fechadas.','Armaduras: mecânica suspensa nesta edição (sem bônus).','Dificuldades de testes ficam a critério do mestre.','Cinete, grimório, equipamentos e preços: sem regras numéricas; campos livres.'];
 /* ===== Estado e persistência ===== */
 /* Versão do formato: 2 = ficha única + rede; 3 = campos narrativos (narr) e registro do cálculo de mana (mana0). */
 const VER=3,NARR=[['conceito','Conceito do personagem'],['aparencia','Aparência'],['objetivos','Objetivos'],['obs','Observações pessoais']];
@@ -498,11 +532,15 @@ const LS0='sodual.v1';let LS=LS0;const DEF=()=>({v:VER,chars:[],net:{pos:{},edge
 /* Normaliza/migra qualquer objeto de dados (carga inicial e restauração de backup). Nunca descarta dados do usuário sem necessidade. */
 function norm(o){const d=Object.assign(DEF(),o&&typeof o=='object'?o:{});d.chars=Array.isArray(d.chars)?d.chars:[];d.net=Object.assign({pos:{},edges:[],people:[]},d.net||{});d.net.pos=d.net.pos||{};d.net.edges=Array.isArray(d.net.edges)?d.net.edges:[];d.net.people=Array.isArray(d.net.people)?d.net.people:[];d.set=Object.assign(DEF().set,d.set||{});
  if(d.chars.length>1){d.chars.slice(1).forEach(c=>{if(!d.net.people.some(p=>p.id==c.id))d.net.people.push({id:c.id,nome:c.nome,cor:c.cor||"#5ee7ff",img:c.img||""})});d.chars=d.chars.slice(0,1)}
- d.chars.forEach(c=>{c.hist=c.hist||{t:"",html:""};c.bag=c.bag||[];c.magias=c.magias||[];c.habs=c.habs||[];c.sk=c.sk||{};c.money=c.money||[0,0,0];c.w=c.w||{};
+ d.chars.forEach(c=>{c.hist=c.hist||{t:"",html:""};c.bag=c.bag||[];c.magias=c.magias||[];c.habs=c.habs||[];c.sk=c.sk||{};c.money=c.money||[0,0,0];
+  /* Ferimentos: completa regiões e campos novos (cnt, cb) sem alterar grau, contador, amputação ou morte já gravados. */
+  normFerimentos(c);
   /* v3: só acrescenta campos ausentes. Reserva (manaMax/mana), núcleo e textos existentes nunca são recalculados nem sobrescritos. */
   const n=c.narr&&typeof c.narr=='object'?c.narr:{};c.narr=Object.fromEntries(NARR.map(([k])=>[k,typeof n[k]=='string'?n[k]:'']).concat(Object.entries(n).filter(([k])=>!NARR.some(x=>x[0]==k))));if(c.nucleo==null)c.nucleo='';
   /* Postura: arma pesada só permite Ofensiva (regra aplicada também a fichas antigas); valor desconhecido vira Neutra. */
   if(!POS[c.post])c.post='Neutra';if(c.pesada&&c.post!='Ofensiva')c.post='Ofensiva'});
+ /* Rascunho de criação rolado com a quantidade antiga de dados raciais: a rolagem fica guardada em mrAntiga (não é apagada), mas deixa de valer; o jogador rola de novo com a regra atual. */
+ const W=d.wiz,M=W&&W.mr;if(M&&PV[M.povo]&&Array.isArray(M.dados)&&M.dados.length!=PV[M.povo].d){W.mrAntiga=M;delete W.mr}
  ["folders","camp","bes","diario","arsenal"].forEach(k=>delete d[k]);d.v=VER;return d}
 let S=DEF();
 /* Carrega (e migra, se for de versão anterior) os dados guardados na chave k e passa a salvar nela. Retorna false se a chave não existia. */
@@ -534,12 +572,64 @@ const atkPostura=c=>ATK_POS[post(c)]||0;
 const atkMod=(c,skill)=>((c.sk||{})[skill]||0)+atkPostura(c);
 /* Contador do próximo grau de uma região: {h,n} ou null quando não há progressão (Saudável ou Fatal). */
 const progresso=(c,r)=>{const w=c.w[r];return w.g>0&&w.g<5?{h:w.h,n:NEED[w.g][RG[r][1]]}:null};
-function wound(c,r,g){const w=c.w[r],l=RG[r][1],L=m=>w.log.unshift(new Date().toLocaleTimeString().slice(0,5)+' — '+m);
- const other=Object.entries(c.w).some(([k,x])=>x.g==5&&k!=r);
- if(other&&g>=3){c.dead=true;L('Ferimento '+GN[g]+' com outra região Fatal: MORTE IMEDIATA');return}
- if(w.g==5&&l&&g<=2){const x=rnd(4);if(x==4){w.amp=1;L('1D4=4: membro amputado')}else L('1D4='+x+': sem amputação');return}
- if(w.g==5){L('Impacto em região Fatal');return}
- if(g>w.g){w.g=g;w.h=g<5?1:0;L('Ferimento '+GN[g]+(g<5?' — impacto 1/'+NEED[g][l]+' rumo a '+GN[g+1]:''))}else{w.h++;const n=NEED[w.g][l];L('Impacto '+w.h+'/'+n+' em '+GN[w.g]);if(w.h>=n){w.g++;w.h=0;L('Agravou para '+GN[w.g])}}}
+/* ===== Ferimentos, Fatal, morte e desmembramento — fonte única para interface, testes e carga de fichas =====
+   Região c.w[r]: g grau (0 Saudável … 5 Fatal), h ferimentos equivalentes rumo ao próximo grau, amp 0 Íntegro / 1 Amputado (só membros),
+   cnt[g] ferimentos recebidos de cada grau, ac[g] ferimentos de grau menor que o estado ainda acumulados (não convertidos), log textos da região. Ficha: dead, morte {em,reg,g} e cb (histórico de combate, mais recente primeiro). */
+/* Declarações de função (içadas): norm() as usa já na carga inicial, antes desta linha ser executada. */
+function ehMembro(r){return!!(RG[r]&&RG[r][1])}
+function int0(v){return Math.max(0,Math.trunc(+v)||0)}
+const membro=(c,r)=>ehMembro(r)?(c.w[r].amp?'Amputado':'Íntegro'):null,CB_MAX=200;
+/* Completa/saneia uma região sem apagar dados: grau 0..5, contadores inteiros e não negativos, amputação só em braço/perna. */
+function normReg(w,r){w=w&&typeof w=='object'?w:{};w.g=Math.min(5,int0(w.g));w.h=int0(w.h);if(w.g>0&&w.g<5)w.h=Math.min(w.h,NEED[w.g][RG[r][1]]-1);
+ w.amp=ehMembro(r)&&+w.amp?1:0;w.log=Array.isArray(w.log)?w.log:[];const n=Array.isArray(w.cnt)?w.cnt:[];w.cnt=GN.map((_,i)=>int0(n[i]));
+ /* ac[k]: ferimentos de grau k, menor que o estado, ainda não convertidos. Fichas antigas começam com 0 (nada é reconstruído). */
+ const q=Array.isArray(w.ac)?w.ac:[];w.ac=GN.map((_,i)=>int0(q[i]));return w}
+function normFerimentos(c){c.w=c.w&&typeof c.w=='object'?c.w:{};Object.keys(RG).forEach(r=>c.w[r]=normReg(c.w[r],r));c.dead=!!c.dead;c.cb=Array.isArray(c.cb)?c.cb:[];return c}
+/* Morte imediata, avaliada com o estado ANTERIOR ao ferimento: outra região já Fatal + ferimento Alto (3) ou pior nesta região. */
+const avaliarMorte=(c,r,g)=>g>=3&&Object.keys(RG).some(k=>k!=r&&c.w[k].g==5);
+/* Teste de desmembramento: braço/perna já Fatal, ainda íntegro, recebendo ferimento Leve (1) ou Intermediário (2). */
+const testaDesmembramento=(c,r,g)=>ehMembro(r)&&c.w[r].g==5&&!c.w[r].amp&&(g==1||g==2);
+/* Progressão pura de uma região (não altera w; devolve o novo estado).
+   - Mesmo grau do estado: soma em h (o estado conta como 1); ao atingir NEED, sobe um grau e o novo estado começa em 1.
+   - Grau menor: fica no acumulador ac[grau]. Ao atingir NEED daquele grau, as ocorrências são consumidas (cada uma usada uma só vez)
+     e formam 1 ocorrência do grau seguinte, que segue a mesma regra (conversões sucessivas).
+   - Grau maior: define o grau e já conta 1; as ocorrências do grau anterior (h) não são descartadas: vão para ac (confirmado pela mesa).
+   - Fatal é o limite: em região Fatal os ferimentos são acumulados, mas nenhuma conversão forma um novo Fatal. A gravidade nunca diminui.
+   Devolve {g,h,ac,ef,conv,subiu}: conv lista os graus convertidos (ex.: [1] = Leves formaram um Intermediário). */
+function progredir(w,r,g){const l=RG[r][1],ac=GN.map((_,i)=>int0((w.ac||[])[i])),g0=w.g,conv=[];let G=w.g,H=w.h,subiu=false;
+ const un=k=>{if(k>G){if(G>0&&G<5)ac[G]+=H;G=k;H=k<5?1:0;return}
+  if(k==G){if(G<5&&++H>=NEED[G][l]){G++;H=G<5?1:0;subiu=true}return}
+  ac[k]++;if(!(G==5&&k+1==5)&&ac[k]>=NEED[k][l]){ac[k]-=NEED[k][l];conv.push(k);un(k+1)}};
+ un(g);const ef=g>g0?'grau':g==g0?(g0==5?'fatal':subiu?'agravou':'impacto'):subiu?'agravou':conv.length?'convertido':'inferior';
+ return{g:G,h:H,ac,ef,conv,subiu}}
+const hora=t=>new Date(t).toLocaleTimeString().slice(0,5);
+/* Texto de um evento do histórico (região e ficha). */
+function descreverEvento(ev){const r=ev.reg,nm=RG[r]?RG[r][0]:r,a=ev.antes||{},d=ev.depois||{};if(ev.tipo&&ev.tipo!='ferimento')return ev.txt||'';
+ const l=RG[r]?RG[r][1]:0,n=d.g>0&&d.g<5?NEED[d.g][l]:0,p=[nm+': ferimento '+GN[ev.g]],rumo=n?GN[d.g]+' — '+d.h+'/'+n+' rumo a '+GN[d.g+1]:GN[d.g];
+ /* Conversões de ferimentos acumulados (ex.: "2 Leves formaram 1 Intermediário"). */
+ (ev.conv||[]).forEach(k=>p.push(NEED[k][l]+' '+GN[k]+(NEED[k][l]>1?'s':'')+' formaram 1 '+GN[k+1]));
+ const acum=()=>{const v=d.ac&&d.ac[ev.g];return v?'acumulado ('+v+'/'+NEED[ev.g][l]+' para formar 1 '+GN[ev.g+1]+')':''};
+ p.push({grau:GN[a.g]+' → '+GN[d.g]+(n?' ('+d.h+'/'+n+' rumo a '+GN[d.g+1]+')':'')+(a.g>0&&a.g<5&&a.h?' · '+a.h+' '+GN[a.g]+' anterior(es) mantido(s) no acumulador':''),impacto:rumo,agravou:'agravou de '+GN[a.g]+' para '+GN[d.g],
+  convertido:rumo,inferior:(d.g==5?'região já Fatal (limite)':'menor que o estado atual ('+GN[d.g]+')')+(acum()?', '+acum():''),fatal:'região já Fatal (limite)'}[ev.ef]);
+ if(a.g<5&&d.g==5)p.push('condição crítica (Fatal) — continua vivo');if(ev.d4!=null)p.push('Teste de desmembramento: 1D4 → '+ev.d4+(ev.amp?' — '+nm+' amputado!':' — sem amputação'));
+ if(ev.morte)p.push('MORTE IMEDIATA (outra região já estava Fatal)');return p.join(' · ')}
+function registrar(c,ev){ev.t=ev.t||new Date().toISOString();const w=c.w[ev.reg];if(w)w.log.unshift(hora(ev.t)+' — '+descreverEvento(ev).replace(/^[^:]+: /,''));c.cb.unshift(ev);if(c.cb.length>CB_MAX)c.cb.length=CB_MAX;return ev}
+/* Registra um ferimento de grau g (1 Leve … 5 Fatal) na região r. d4: rolador opcional (testes); padrão aleatório no momento do impacto.
+   Devolve o evento {reg,g,antes,depois,ef,d4,amp,morte} ou null se a entrada for inválida. */
+function wound(c,r,g,d4){g=Math.trunc(+g);if(!RG[r]||!(g>=1&&g<=5))return null;normFerimentos(c);
+ const w=c.w[r],antes={g:w.g,h:w.h,amp:w.amp},morte=!c.dead&&avaliarMorte(c,r,g),teste=testaDesmembramento(c,r,g),p=progredir(w,r,g);
+ antes.ac=w.ac.slice();w.g=p.g;w.h=p.h;w.ac=p.ac;w.cnt[g]++;let x=null;if(teste){x=Math.min(4,Math.max(1,Math.trunc((d4||(()=>rnd(4)))())||1));if(x==4)w.amp=1}
+ const ev={tipo:'ferimento',reg:r,g,antes,depois:{g:w.g,h:w.h,amp:w.amp,ac:w.ac.slice()},ef:p.ef,conv:p.conv,d4:x,amp:x==4,morte};
+ if(morte){c.dead=true;c.morte={em:new Date().toISOString(),reg:r,g}}return registrar(c,ev)}
+/* Ajustes manuais (correções do jogador/mestre). Nenhum deles desfaz amputação nem morte: essas têm ações próprias, com confirmação na interface. */
+function ajusteRegiao(c,r,acao,v){normFerimentos(c);const w=c.w[r],a={g:w.g,h:w.h,amp:w.amp},M=t=>registrar(c,{tipo:'ajuste',reg:r,antes:a,depois:{g:w.g,h:w.h,amp:w.amp},txt:RG[r][0]+': '+t});
+ if(acao=='impacto'){if(w.h>0){w.h--;return M('−1 ferimento no contador (ajuste manual)')}return null}
+ if(acao=='grau'){if(w.g>0){w.g--;w.h=0;return M('grau reduzido para '+GN[w.g]+' (ajuste manual)')}return null}
+ if(acao=='curar'){w.g=0;w.h=0;w.ac=GN.map(()=>0);return M('região curada (ajuste manual)'+(w.amp?' — o membro continua amputado':''))}
+ if(acao=='definir'){const g=Math.trunc(+v);if(!(g>=0&&g<=5))return null;w.g=g;w.h=0;return M('grau definido: '+GN[g]+' (ajuste manual)')}
+ if(acao=='amputar'){if(!ehMembro(r)||w.amp)return null;w.amp=1;return M('amputação registrada manualmente')}
+ if(acao=='desamputar'){if(!w.amp)return null;w.amp=0;return M('amputação desfeita (correção de registro)')}return null}
+function desfazerMorte(c){normFerimentos(c);if(!c.dead)return null;c.dead=false;delete c.morte;return registrar(c,{tipo:'ajuste',reg:'',txt:'Morte desfeita (correção de registro)'})}
 /* ===== Criação de personagem: ver src/creation.js (regras, cálculo de mana e validação global) ===== */
 </script>
 <script>/* ===== Criação de personagem — regras, cálculos e validação (independente da interface) =====
@@ -660,9 +750,9 @@ function mk(w){const v=validateCharacterCreation(w);if(!v.ok){const x=new Error(
  const sk={};w.per.forEach(p=>sk[p]=2);periciasOrigem(w.origem).forEach(p=>{if(!(p in sk))sk[p]=2});
  const m=calcManaInicial(w),hb=habilidadeRacial(w.povo,w.hab),n=w.narr||{};
  return{id:uid(),nome:w.nome.trim(),idade:w.idade,povo:w.povo,origem:w.origem,cor:'#7a3436',img:'',a:{...w.a},
-  manaMax:m.total,mana:m.total,mana0:m,nucleo:'',sk,hab:hb[0],
+  manaMax:m.total,mana:m.total,mana0:m,nucleo:NUC_INI,sk,hab:hb[0],
   narr:Object.fromEntries(NARR.map(([k])=>[k,String(n[k]||'').trim()])),
-  w:Object.fromEntries(Object.keys(RG).map(k=>[k,{g:0,h:0,amp:0,log:[]}])),post:'Neutra',pesada:false,notes:'',inv:'',
+  w:Object.fromEntries(Object.keys(RG).map(k=>[k,normReg({},k)])),cb:[],post:'Neutra',pesada:false,notes:'',inv:'',
   hist:{t:'',html:txtParaHtml(n.historia)},bag:[],magias:[],habs:[{id:uid(),nome:hb[0],cat:'Habilidade racial',efe:hb[1],racial:true}],eq:'',cin:'',money:[0,0,0],dead:false}}
 </script>
 <script>const {useReducer}=React,h=htm.bind((t,p,...c)=>{if(p&&p.class){p={...p,className:p.class};delete p.class}return React.createElement(t,p,...c)});
@@ -708,7 +798,7 @@ const Wiz=()=>{const mob=useMob();/* O rascunho fica salvo na conta (S.wiz): ten
  if(s==1)b=h`<p>Todos começam com 1 em cada atributo e recebem 4 pontos extras (soma 9, máximo 5 por atributo). Pode-se reduzir <b>um único</b> atributo de 1 para 0 para liberar 1 ponto; a soma continua 9.</p>
   <p class="big" aria-live="polite">Pontos restantes: ${q.restantes}</p>${AT.map(([k,n])=>h`<div class="row wz-at" key=${k}><b>${n}</b><${B} aria-label=${'Diminuir '+n} disabled=${!podeAlterarAtributo(w.a,k,-1)} onClick=${()=>{avisoRemocao(setAtributo(w,k,w.a[k]-1));R()}}><${I} n="minus" s=${14}/><//><span class="big">${w.a[k]}</span><${B} aria-label=${'Aumentar '+n} disabled=${!podeAlterarAtributo(w.a,k,1)} onClick=${()=>{avisoRemocao(setAtributo(w,k,w.a[k]+1));R()}}><${I} n="plus" s=${14}/><//>${w.a[k]==0&&h`<small>(testes: 2D20, mantém o menor)</small>`}</div>`)}
   ${q.zeros.length==1&&h`<div class="note">${AN[q.zeros[0]]} está em 0: nenhum outro atributo pode ser reduzido a 0.</div>`}`;
- if(s==2)b=h`<p>Role os dados raciais e some o Corpo. Você tem até <b>${MANA_TENT} tentativas</b>: rolar de novo descarta o resultado anterior para sempre, e a terceira rolagem é definitiva.</p><${ManaRoll} w=${w}/>
+ if(s==2)b=h`${w.mrAntiga&&!w.mr&&h`<div class="note">Este rascunho tinha uma rolagem feita com a quantidade anterior de dados raciais (${w.mrAntiga.dados.length}D4). A regra mudou para ${manaFormula(w.povo)||'os novos dados'}: role a reserva novamente.</div>`}<p>Role os dados raciais e some o Corpo. Você tem até <b>${MANA_TENT} tentativas</b>: rolar de novo descarta o resultado anterior para sempre, e a terceira rolagem é definitiva.</p><${ManaRoll} w=${w}/>
   <div class="note">Depois da primeira rolagem o povo fica travado. Mudar o Corpo só recalcula o total, sem nova rolagem.</div><div class="note">A reserva mede a quantidade de energia; não mede controle, refinamento nem o estágio do núcleo.</div>`;
  if(s==3)b=h`<p>${w.a.int>0?h`Escolha exatamente <b>${w.a.int}</b> perícia(s) da lista ${w.povo?'de '+w.povo:'do povo'} (Inteligência ${w.a.int}). Todas começam em Apto (+2). Selecionadas: <b>${w.per.length}/${w.a.int}</b>.`:'Inteligência 0: o personagem não recebe perícias raciais. Avance normalmente.'}</p>
   ${pv?pv.per.map(p=>{const on=w.per.includes(p);return opt(on,()=>{if(!togglePericia(w,p))toast('Limite atingido: a quantidade é igual à Inteligência.');R()},h`${p} <small>(${AN[SK[p]]}) · ${on?'Apto +2':'Não treinado'}</small>`,!on&&w.per.length>=w.a.int)}):h`<div class="note">Escolha o povo na etapa Identidade.</div>`}
@@ -725,7 +815,7 @@ const Wiz=()=>{const mob=useMob();/* O rascunho fica salvo na conta (S.wiz): ten
   ${sec(4,'Habilidade racial',hb?h`<p><b>${hb[0]}</b><br/><small>${hb[1]}</small></p>`:h`<p class="mut">Nenhuma escolhida.</p>`)}
   ${sec(5,'Origem',w.origem?h`<p><b>${w.origem}</b><br/><small>${ORI_DESC[w.origem]||''}</small></p>`:h`<p class="mut">Nenhuma escolhida.</p>`)}
   ${sec(0,'Informações narrativas (opcionais)',nar.length?h`<dl class="rv-n">${nar.map(([k,l])=>h`<div key=${k}><dt>${l}</dt><dd>${N[k]}</dd></div>`)}</dl>`:h`<p class="mut">Nenhuma registrada. Você pode preencher depois na ficha e na aba História.</p>`)}
-  <section class="rv-s"><h3>Regras ainda não definidas</h3><ul class="rv-l mut"><li>Pacotes das origens (perícias, arma, habilidade, dinheiro e equipamentos) não publicados: nada foi concedido.</li><li>Estágio inicial do núcleo não é fixado pelo livro: fica “não registrado” na ficha.</li><li>Dragão, marca, Cinete e grimório não são concedidos na criação; registre-os quando fizerem parte da trajetória.</li></ul></section></div>`}
+  <section class="rv-s"><h3>Regras ainda não definidas</h3><ul class="rv-l mut"><li>Pacotes das origens (perícias, arma, habilidade, dinheiro e equipamentos) não publicados: nada foi concedido.</li><li>O núcleo começa no estágio inicial: Preto.</li><li>Dragão, marca, Cinete e grimório não são concedidos na criação; registre-os quando fizerem parte da trajetória.</li></ul></section></div>`}
  const concluir=()=>{const r=validateCharacterCreation(w);if(!r.ok){ui.step=6;toast('A ficha tem '+r.erros.length+' problema(s). Corrija antes de salvar.');R();return}
   if(me()){toast('Já existe uma ficha principal. Nada foi substituído.');return}
   const n=mk(w),ant=S.chars,aw=S.wiz;S.chars=[n];delete S.wiz;if(!save()){S.chars=ant;S.wiz=aw;R();return}ui.id=n.id;ui.w=null;ui.wmax=0;ui.tab='ficha';go('sheet');toast('Ficha criada e salva')};
@@ -745,17 +835,32 @@ INI=['','L','I','A','G','F'];
 const Sil=({c,size=250,leg=true})=>{const sel=ui.reg,ks=Object.keys(SILP).sort((x,y)=>(x==sel)-(y==sel)),pick=k=>{ui.reg=k;R()};
  return h`<div class="silw"><svg class="sil" viewBox="0 0 200 424" style=${{maxWidth:size}} role="group" aria-label="Silhueta do personagem: regiões do corpo"><defs><linearGradient id="sh1" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".28"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".32"/></linearGradient><filter id="glw" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
  <ellipse cx="100" cy="414" rx="62" ry="6" class="sil-gr"/>
- ${ks.map(k=>{const w=c.w[k],s=SILP[k],on=sel==k,crit=w.g>=4&&!w.amp;return h`<g key=${k} class=${'rg'+(on?' sel':'')+(crit?' crit':'')+(w.amp?' amp':'')} role="button" tabIndex="0" aria-pressed=${on} aria-label=${RG[k][0]+': '+(w.amp?'amputado':GN[w.g])} onClick=${()=>pick(k)} onKeyDown=${e=>{if(e.key=='Enter'||e.key==' '){e.preventDefault();pick(k)}}}><title>${RG[k][0]+': '+(w.amp?'Amputado':GN[w.g])}</title>
-  <g transform=${s.t||undefined}><path d=${s.d} class="rg-f" style=${{fill:GC[w.g]}}/><path d=${s.d} fill="url(#sh1)" pointer-events="none"/><path d=${s.d} class="rg-o"/></g>
-  ${w.g>0&&h`<g transform=${'translate('+s.a[0]+' '+s.a[1]+')'} class="rg-b" pointer-events="none">${crit&&h`<circle r="12" class="rg-p"/>`}<circle r="9.5"/><text y="3.6" textAnchor="middle">${w.amp?'×':INI[w.g]}</text></g>`}</g>`})}
- </svg>${leg&&h`<ul class="sil-lg" aria-label="Legenda de graus">${GN.map((n,i)=>h`<li key=${i}><i style=${{background:GC[i]}}></i>${n}</li>`)}</ul>`}</div>`};
-const Panel=({c})=>{const r=ui.reg,w=c.w[r],pg=progresso(c,r),n=pg?pg.n:0;let g=1;
- return h`<${MD} key=${r} class="rp" style=${{'--rc':GC[w.g]}} initial=${{opacity:0,y:10}} animate=${{opacity:1,y:0}}><h2>${RG[r][0]}</h2><p><span class="pill" style=${{background:GC[w.g]}}>${GN[w.g]}</span> ${w.amp?h`<b>Amputado </b>`:''}Penalidade: <b>${pen(c,r)}</b></p>
- ${n>0&&h`<div class="bar"><i style=${{width:w.h/n*100+'%',background:GC[w.g]}}></i></div>`}${n>0&&h`<small>Impactos <b>${w.h}/${n}</b> para ${GN[w.g+1]}</small>`}${fatal(c)&&h`<div class="note">Há região Fatal: −3 geral em qualquer ação (não soma com a regional).</div>`}
- <div class="row"><select id="wg" defaultValue="1" onChange=${e=>g=+e.target.value} ref=${el=>el&&(g=+el.value)}>${GN.slice(1).map((x,i)=>h`<option key=${i} value=${i+1}>${x}</option>`)}</select><${B} p ic="heart" onClick=${()=>upd(()=>wound(c,r,+document.getElementById('wg').value))}>Registrar ferimento<//></div>
- <div class="row"><${B} onClick=${()=>upd(()=>{if(w.h>0)w.h--;w.log.unshift('Impacto removido')})}>−1 impacto<//><${B} onClick=${()=>upd(()=>{if(w.g>0){w.g--;w.h=0;w.amp=0}})}>−1 grau<//><${B} onClick=${()=>upd(()=>{w.g=0;w.h=0;w.amp=0;w.log.unshift('Região curada');c.dead=false})}>Curar<//><select value=${w.g} onChange=${e=>upd(()=>{w.g=+e.target.value;w.h=0;w.amp=0;w.log.unshift('Grau definido: '+GN[w.g])})}>${GN.map((x,i)=>h`<option key=${i} value=${i}>Definir: ${x}</option>`)}</select></div>
+ ${ks.map(k=>{const w=c.w[k],s=SILP[k],on=sel==k,crit=w.g>=4&&!w.amp,lb=RG[k][0]+': '+(w.amp?'membro amputado (ausente)':GN[w.g]);return h`<g key=${k} class=${'rg'+(on?' sel':'')+(crit?' crit':'')+(w.amp?' amp':'')} role="button" tabIndex="0" aria-pressed=${on} aria-label=${lb} onClick=${()=>pick(k)} onKeyDown=${e=>{if(e.key=='Enter'||e.key==' '){e.preventDefault();pick(k)}}}><title>${lb}</title>
+  <g transform=${s.t||undefined}>${w.amp?h`<path d=${s.d} class="rg-f rg-ghost"/><path d=${s.d} class="rg-o"/>`:h`<path d=${s.d} class="rg-f" style=${{fill:GC[w.g]}}/><path d=${s.d} fill="url(#sh1)" pointer-events="none"/><path d=${s.d} class="rg-o"/>`}</g>
+  ${(w.g>0||w.amp)&&h`<g transform=${'translate('+s.a[0]+' '+s.a[1]+')'} class="rg-b" pointer-events="none">${crit&&h`<circle r="12" class="rg-p"/>`}<circle r="9.5"/><text y="3.6" textAnchor="middle">${w.amp?'×':INI[w.g]}</text></g>`}</g>`})}
+ </svg>${leg&&h`<ul class="sil-lg" aria-label="Legenda de graus">${GN.map((n,i)=>h`<li key=${i}><i style=${{background:GC[i]}}></i>${n}</li>`)}${Object.values(c.w).some(x=>x.amp)&&h`<li><i class="sil-lg-amp"></i>Amputado</li>`}</ul>`}</div>`};
+/* Painel da região: registra ferimentos por wound() e ajustes por ajusteRegiao()/desfazerMorte() (rules.js); aqui só apresentação. */
+const regFer=(c,r,g)=>{let ev;upd(()=>{ev=ui.ultEv=wound(c,r,g)});if(!ev)return;if(ev.morte)toast('Morte imediata: outra região já estava Fatal.');else if(ev.amp)toast('Teste de desmembramento: 1D4 → 4 · '+RG[r][0]+' amputado!');else if(ev.d4!=null)toast('Teste de desmembramento: 1D4 → '+ev.d4+' · sem amputação');else if(ev.antes.g<5&&ev.depois.g==5)toast(RG[r][0]+' em estado Fatal: condição crítica, personagem vivo.')};
+const MorteAv=({c})=>c.dead?h`<div class="note bad morte" role="status"><${I} n="skull" s=${18}/> <b>Personagem morto (morte imediata)</b>${c.morte&&RG[c.morte.reg]?h`<small> — ferimento ${GN[c.morte.g]} em ${RG[c.morte.reg][0]} com outra região já Fatal, às ${hora(c.morte.em)}.</small>`:''} <small class="mut">A ficha e os dados foram preservados.</small>
+ <button type="button" class="lk" onClick=${()=>{if(confirm('Desfazer o registro de morte? Use só para corrigir um registro feito por engano.'))upd(()=>desfazerMorte(c))}}>Desfazer (correção)</button></div>`:null;
+const Panel=({c})=>{const r=ui.reg,w=c.w[r],pg=progresso(c,r),n=pg?pg.n:0,[g,sg]=React.useState(1),lim=ehMembro(r),ev=ui.ultEv&&ui.ultEv.reg==r&&c.cb[0]===ui.ultEv?ui.ultEv:null,
+  outraFatal=Object.keys(RG).some(k=>k!=r&&c.w[k].g==5),rec=w.cnt.map((x,i)=>[i,x]).filter(([i,x])=>i&&x),aj=(a,v)=>upd(()=>ajusteRegiao(c,r,a,v));
+ return h`<${MD} key=${r} class="rp" style=${{'--rc':GC[w.g]}} initial=${{opacity:0,y:10}} animate=${{opacity:1,y:0}}><h2>${RG[r][0]}${lim&&h` <span class=${'ch'+(w.amp?' bad':'')}>${membro(c,r)}</span>`}</h2><${MorteAv} c=${c}/>
+ <p><span class="pill" style=${{background:GC[w.g]}}>${GN[w.g]}</span> ${w.amp?h`<b>Amputado </b>`:''}Penalidade: <b>${pen(c,r)}</b></p>
+ ${n>0&&h`<div class="bar" role="progressbar" aria-label=${'Progressão para '+GN[w.g+1]} aria-valuenow=${w.h} aria-valuemin="0" aria-valuemax=${n}><i style=${{width:w.h/n*100+'%',background:GC[w.g]}}></i></div>`}${n>0&&h`<small>Progressão para ${GN[w.g+1]}: <b>${w.h}/${n}</b> <span class="mut">(ferimentos ${GN[w.g]})</span></small>`}
+ ${(ac=>ac.length>0&&h`<small class="fer-rec">Acumulados: ${ac.map(([i,x])=>h`<b key=${i}>${GN[i]} ${x}/${NEED[i][RG[r][1]]}</b>`).reduce((a,b)=>a.length?[...a,' · ',b]:[b],[])} <span class="mut">(formam 1 ferimento do grau seguinte)</span></small>`)(w.ac.map((x,i)=>[i,x]).filter(([i,x])=>i&&i<5&&x))}
+ ${rec.length>0&&h`<small class="mut fer-rec">Recebidos: ${rec.map(([i,x])=>GN[i]+' ×'+x).join(' · ')}</small>`}
+ ${w.g==5&&!c.dead&&h`<div class="note crit-n"><b>Condição crítica (Fatal).</b> O personagem continua vivo. Tratamento, estabilização e tempo de sobrevivência ainda não têm regra definida.${lim&&!w.amp?' Novo ferimento Leve ou Intermediário neste membro rola 1D4 de desmembramento (4 = amputação).':''}</div>`}
+ ${outraFatal&&!c.dead&&h`<div class="note">Outra região já está Fatal: ferimento Alto ou pior aqui causa <b>morte imediata</b>.</div>`}
+ ${fatal(c)&&h`<div class="note">Há região Fatal: −3 geral em qualquer ação (não soma com a regional).</div>`}
+ <div class="row"><select aria-label="Grau do novo ferimento" value=${g} onChange=${e=>sg(+e.target.value)}>${GN.slice(1).map((x,i)=>h`<option key=${i} value=${i+1}>${x}</option>`)}</select><${B} p ic="heart" onClick=${()=>regFer(c,r,g)}>Registrar ferimento<//></div>
+ ${ev&&h`<div class=${'note ev'+(ev.morte||ev.amp?' bad':'')} aria-live="polite">${descreverEvento(ev)}</div>`}
+ <div class="row"><${B} onClick=${()=>aj('impacto')}>−1 no contador<//><${B} onClick=${()=>aj('grau')}>−1 grau<//><${B} onClick=${()=>aj('curar')}>Curar<//><select aria-label="Definir grau manualmente" value=${w.g} onChange=${e=>aj('definir',+e.target.value)}>${GN.map((x,i)=>h`<option key=${i} value=${i}>Definir: ${x}</option>`)}</select></div>
+ ${lim&&h`<div class="row">${w.amp?h`<${B} onClick=${()=>{if(confirm('Desfazer a amputação de '+RG[r][0]+'? Use só para corrigir um registro feito por engano.'))aj('desamputar')}}>Desfazer amputação (correção)<//>`:h`<${B} ic="x" class="b dng" onClick=${()=>{if(confirm('Registrar a amputação de '+RG[r][0]+'? O membro ficará ausente na ficha até uma correção manual.'))aj('amputar')}}>Registrar amputação<//>`}</div>`}
  <h2 style=${{fontSize:'.9rem'}}>Histórico</h2>${w.log.length?w.log.slice(0,6).map((l,i)=>h`<div key=${i}><small>${l}</small></div>`):h`<div class="note"><${I} n="scroll" s=${14}/> Nenhuma cicatriz registrada nesta região.</div>`}<//>`};
-const Sum=({c})=>{const p=post(c),ps=POS[p];return h`<div class="ov"><table><tr><th>Região</th><th>Grau</th><th>Penal.</th><th>Próximo grau</th><th>Defesa (${p})</th></tr>${Object.keys(RG).map(k=>h`<tr key=${k} style=${{cursor:'pointer'}} onClick=${()=>{ui.reg=k;R()}}><td>${RG[k][0]}</td><td><span class="pill" style=${{background:GC[c.w[k].g]}}>${c.w[k].amp?'Amputado':GN[c.w[k].g]}</span></td><td>${pen(c,k)}</td><td>${(pg=>pg?h`<span class="prg" title=${'Impactos para '+GN[c.w[k].g+1]}><b>${pg.h}/${pg.n}</b> <small>→ ${GN[c.w[k].g+1]}</small></span>`:h`<small class="mut">—</small>`)(progresso(c,k))}</td><td>+${ps[RG[k][1]]}</td></tr>`)}</table></div>${c.dead&&h`<p class="big"><${I} n="skull" s=${24}/> Personagem morto (morte imediata)</p>`}`};
+const Sum=({c})=>{const p=post(c),ps=POS[p];return h`<div class="ov"><table><tr><th>Região</th><th>Grau</th><th>Penal.</th><th>Próximo grau</th><th>Defesa (${p})</th></tr>${Object.keys(RG).map(k=>h`<tr key=${k} style=${{cursor:'pointer'}} onClick=${()=>{ui.reg=k;R()}}><td>${RG[k][0]}</td><td><span class="pill" style=${{background:GC[c.w[k].g]}}>${GN[c.w[k].g]}</span>${c.w[k].amp?h` <span class="ch bad">Amputado</span>`:''}</td><td>${pen(c,k)}</td><td>${(pg=>pg?h`<span class="prg" title=${'Progressão para '+GN[c.w[k].g+1]}><b>${pg.h}/${pg.n}</b> <small>→ ${GN[c.w[k].g+1]}</small></span>`:h`<small class="mut">—</small>`)(progresso(c,k))}</td><td>+${ps[RG[k][1]]}</td></tr>`)}</table></div><${MorteAv} c=${c}/>`};
+/* Histórico de combate da ficha (c.cb): eventos estruturados, mais recentes primeiro. */
+const CbHist=({c})=>{const[n,sn]=React.useState(8),l=c.cb||[];return h`<div class="cbh">${l.length?h`<ol>${l.slice(0,n).map((ev,i)=>h`<li key=${i} class=${ev.morte||ev.amp?'bad':''}><small class="mut">${hora(ev.t)}</small> ${descreverEvento(ev)}</li>`)}</ol>${l.length>n&&h`<button type="button" class="lk" onClick=${()=>sn(n+20)}>Ver mais</button>`}`:h`<div class="note">Nenhum evento de combate registrado.</div>`}</div>`};
 /* k: 'atk' soma o bônus de ataque da postura; com região defendida soma o bônus defensivo. Cálculos vêm de rules.js. */
 const doRoll=(c,a,s,m,reg,k)=>{let mm=+m,ps=0,pa=0;if(reg){ps=POS[post(c)][RG[reg][1]];mm+=ps}else if(k=='atk'){pa=atkPostura(c);mm+=pa}ui.res={t:AN[a]+' + '+s+(ps?` (postura +${ps})`:'')+(pa?` (ataque +${pa}, postura ${post(c)})`:''),r:roll(c.a[a],s,mm)};R()};
 const NucDot=({v})=>h`<i class="nuc-d" aria-hidden="true" style=${{background:NUC_C[v]||'transparent',borderStyle:NUC_C[v]?'solid':'dashed'}}></i>`;
@@ -765,7 +870,7 @@ const PostSel=({c})=>{const ok=posturasPermitidas(c),ef=post(c);return h`<div cl
  ${c.pesada&&h`<small class="mut">Arma pesada: só a postura Ofensiva (sem bônus defensivos).</small>`}${ef!=c.post&&!c.pesada&&h`<small class="mut">Efetiva: <b>${ef}</b> — ferimento Alto ou pior em um braço impede a Defensiva.</small>`}
  <div class="atk"><span>ATK corpo a corpo <b>${atkMod(c,'Luta')>=0?'+':''}${atkMod(c,'Luta')}</b></span><span>ATK à distância <b>${atkMod(c,'Pontaria')>=0?'+':''}${atkMod(c,'Pontaria')}</b></span><small class="mut">Perícia + postura${atkPostura(c)?' (Ofensiva +'+atkPostura(c)+')':''}; o atributo define os D20.</small></div>`};
 const Combat=({c,mob})=>{const r=ui.rl,pre=(a,s,d,l)=>h`<${B} ic="dice" onClick=${()=>{Object.assign(r,{a,s,k:d?'def':'atk'});if(!d)r.reg='';R()}}>${l}<//>`;
- return h`<div class="cb"><div class="cb-l"><${Sil} c=${c} size=${mob?220:300}/><${Panel} c=${c}/></div><div class="cb-m sec"><h2><${I} n="shield"/> Condição</h2><${Sum} c=${c}/><h2 style=${{marginTop:14}}>Postura</h2><${PostSel} c=${c}/><div class="note">Deslocamento ${c.hab=='Passos Arcanos'?12:9} m/turno; Desengajar gasta a ação.</div></div>
+ return h`<div class="cb"><div class="cb-l"><${Sil} c=${c} size=${mob?220:300}/><${Panel} c=${c}/></div><div class="cb-m sec"><h2><${I} n="shield"/> Condição</h2><${Sum} c=${c}/><h2 style=${{marginTop:14}}>Postura</h2><${PostSel} c=${c}/><div class="note">Deslocamento ${c.hab=='Passos Arcanos'?12:9} m/turno; Desengajar gasta a ação.</div><h2 style=${{marginTop:14}}>Histórico de combate</h2><${CbHist} c=${c}/></div>
  <div class="cb-r sec"><h2><${I} n="dice"/> Rolagens</h2><div class="row">${pre('des','Luta',1,'Esquiva')}${pre('for','Luta',1,'Bloqueio')}${pre('for','Luta',0,'Ataque (For)')}${pre('des','Luta',0,'Ataque (Des)')}${pre('des','Pontaria',0,'Pontaria')}</div>
  <div class="row"><select value=${r.a} onChange=${e=>{r.a=e.target.value;R()}}>${AT.map(([k,n])=>h`<option key=${k} value=${k}>${n} (${c.a[k]})</option>`)}</select><select value=${r.s} onChange=${e=>{r.s=e.target.value;R()}}>${Object.keys(SK).map(s=>h`<option key=${s}>${s}</option>`)}</select><label>Mod <input type="number" value=${r.m} onChange=${e=>{r.m=+e.target.value;R()}} style=${{width:64}}/></label><select value=${r.reg} onChange=${e=>{r.reg=e.target.value;R()}}><option value="">Região defendida</option>${Object.keys(RG).map(k=>h`<option key=${k} value=${k}>${RG[k][0]}</option>`)}</select><select aria-label="Tipo de teste" value=${r.reg?'def':r.k||''} disabled=${!!r.reg} onChange=${e=>{r.k=e.target.value;R()}}><option value="">Teste</option><option value="atk">Ataque</option><option value="def">Defesa</option></select></div><${B} p ic="dice" onClick=${()=>doRoll(c,r.a,r.s,r.m,r.reg,r.reg?'def':r.k)}>Rolar<//><div class="note">Ataque soma o bônus da postura Ofensiva (+2); defesa com região soma o bônus defensivo da postura. Aplique penalidades de ferimento no campo Mod.</div></div></div>`};
 /* Campos narrativos (sem efeito mecânico), compartilhados pela ficha e pela aba História. */
@@ -774,7 +879,7 @@ const SKG=AT.map(([k,n])=>[k,n,Object.keys(SK).filter(s=>SK[s]==k)]).filter(g=>g
 const Sheet=({c})=>{const ta=(l,k)=>h`<label class="fld">${l}<textarea value=${c[k]} onChange=${e=>upd(()=>c[k]=e.target.value)}></textarea></label>`,tab=ui.tab,ef=post(c),mp=c.manaMax?Math.min(100,c.mana/c.manaMax*100):0,
  del=()=>{if(confirm('Excluir o personagem e tudo ligado a ele (história, mochila, magias, habilidades e conexões)? Não pode ser desfeito.'))upd(()=>{S.net.edges=S.net.edges.filter(e=>e.a!=c.id&&e.b!=c.id);delete S.net.pos[c.id];S.chars=[];ui.id=null})},
  jsn=()=>{const l=document.createElement('a');l.href=URL.createObjectURL(new Blob([JSON.stringify({v:VER,chars:[c],net:{pos:{},edges:[],people:[]}},null,1)],{type:'application/json'}));l.download='ficha-'+c.nome+'.json';l.click()};
- const mob=useMob(),acts=h`<${B} ic="print" onClick=${()=>print()}>PDF<//><${B} ic="down" onClick=${jsn}>JSON<//><${B} ic="trash" onClick=${del}>Excluir<//>`,
+ const mob=useMob(),fx=useEditorImagem(()=>S.chars.find(k=>k.id==c.id),IMG_CFG.retrato,'Enquadrar foto do personagem'),acts=h`<${B} ic="print" onClick=${()=>print()}>PDF<//><${B} ic="down" onClick=${jsn}>JSON<//><${B} ic="trash" onClick=${del}>Excluir<//>`,
  atS=h`<section class="sh-at" aria-label="Atributos">${AT.map(([k,n])=>h`<div key=${k} class="at"><span><span class="at-f">${n}</span><span class="at-a" aria-hidden="true">${k.toUpperCase()}</span></span><b>${c.a[k]}</b></div>`)}</section>`,
  skB=h`${SKG.map(([k,n,ss])=>h`<div class="sk" key=${k}><h3>${n}</h3>${ss.map(s=>h`<div class="sk-r" key=${s}><span>${s}</span><select aria-label=${'Grau de '+s} value=${c.sk[s]||0} onChange=${e=>upd(()=>c.sk[s]=+e.target.value)}>${GRD.map(g=>h`<option key=${g[1]} value=${g[1]}>${g[0]} (+${g[1]})</option>`)}</select><button class="b i" aria-label=${'Rolar '+s} onClick=${()=>doRoll(c,SK[s],s,0)}><${I} n="dice" s=${15}/></button></div>`)}</div>`)}<small class="mut">Luta e Pontaria aceitam Força ou Destreza: use o Modo de Combate.</small>`,
  nuc=h`<span class="nuc-s"><${NucDot} v=${c.nucleo}/><select aria-label="Estágio do núcleo" value=${c.nucleo} onChange=${e=>upd(()=>setNucleo(c,e.target.value))}><option value="">Núcleo não registrado</option>${!nucleoValido(c.nucleo)&&h`<option value=${c.nucleo} disabled>${c.nucleo} (registro antigo — escolha o estágio)</option>`}${NUC.map((n,i)=>h`<option key=${n} value=${n}>${i+1}. ${n}</option>`)}</select></span>${!nucleoValido(c.nucleo)&&h`<small class="mut nuc-leg">“${c.nucleo}” vem de uma versão anterior, que tinha um único Laranja. Escolha o tom correto; nada foi alterado automaticamente.</small>`}`,
@@ -795,7 +900,7 @@ const Sheet=({c})=>{const ta=(l,k)=>h`<label class="fld">${l}<textarea value=${c
   <${Fold} k="not" t="Notas" ic="scroll">${notB}<//>
   <${Fold} k="acs" t="Exportar ou excluir ficha" ic="down"><div class="sh-ac">${acts}</div><//>`};
  return h`<${MD} class="sh" initial=${{opacity:0}} animate=${{opacity:1}}>
- <header class="sh-h" style=${{'--c':c.cor}}><label class="sh-av" title="Alterar foto do personagem"><span class="av" style=${{'--c':c.cor,backgroundImage:c.img?`url(${c.img})`:undefined}}>${!c.img&&h`<${I} n="flame" s=${40}/>`}</span><span class="pf-cam"><${I} n="camera" s=${15}/></span><input type="file" accept="image/jpeg,image/png,image/webp,image/gif" aria-label="Alterar foto do personagem" hidden onChange=${e=>{img(c.id,e.target.files[0]);e.target.value=''}}/></label>
+ <header class="sh-h" style=${{'--c':c.cor}}>${fx.input}<span class="av-w"><button type="button" class="sh-av" title="Alterar foto do personagem" aria-label=${c.img?'Substituir foto do personagem':'Escolher foto do personagem'} onClick=${fx.escolher}><span class="av" style=${{'--c':c.cor,backgroundImage:c.img?`url(${c.img})`:undefined}}>${!c.img&&h`<${I} n="flame" s=${40}/>`}</span><span class="pf-cam"><${I} n="camera" s=${15}/></span></button>${c.img&&h`<button type="button" class="av-adj noprint" onClick=${fx.ajustar} aria-label="Ajustar enquadramento da foto do personagem" title="Ajustar enquadramento"><${I} n="crop" s=${14}/></button>`}</span>${fx.modal}
   <div class="sh-t"><div class="tg">FICHA DO PERSONAGEM</div><input type="text" class="sh-nm" aria-label="Nome do personagem" value=${c.nome} onChange=${e=>upd(()=>c.nome=e.target.value.trim()||c.nome)}/><p class="sh-sub">${c.povo} · ${c.origem} · ${c.idade} anos</p>
   <div class="chips"><span class="ch">Postura: ${ef}</span><span class="ch">Mana ${c.mana}/${c.manaMax}</span><span class="ch"><${NucDot} v=${c.nucleo}/>Núcleo ${c.nucleo||'não registrado'}</span>${fatal(c)&&h`<span class="ch bad">Região Fatal</span>`}${c.dead&&h`<span class="ch bad">Morto</span>`}</div></div>
   ${!mob&&h`<div class="sh-ac noprint">${acts}</div>`}</header>
@@ -843,21 +948,21 @@ function readImg(f,sz,cb,lim=70000){if(!f)return;if(!IMGOK.includes(f.type)){toa
 const Modal=({t,onClose,children})=>{React.useEffect(()=>{const f=e=>e.key=='Escape'&&onClose();addEventListener('keydown',f);return()=>removeEventListener('keydown',f)});return h`<div class="mdl" onClick=${onClose}><${MD} class="mb" role="dialog" aria-modal="true" initial=${{opacity:0,y:20,scale:.97}} animate=${{opacity:1,y:0,scale:1}} onClick=${e=>e.stopPropagation()}><h2>${t}<button class="b i" style=${{marginLeft:'auto'}} onClick=${onClose} aria-label="Fechar"><${I} n="x" s=${16}/></button></h2>${children}<//></div>`};
 const NoChar=({t})=>h`<${Empty} ic="scroll" t=${t||'Seu personagem ainda não nasceu'} d="Crie o personagem principal para abrir sua ficha, história, mochila, magias e habilidades." cta="Iniciar criação" fn=${()=>{ui.w=newW();ui.step=0;go('wiz')}}/>`;
 const Avatar=({img,s=34,ic=16})=>h`<span class="uav" style=${{width:s,height:s,backgroundImage:img?`url(${img})`:undefined}}>${!img&&h`<${I} n="user" s=${ic}/>`}</span>`;
-const Profile=()=>{const[tmp,st]=React.useState(null),[ed,se]=React.useState(false),[nm,sn]=React.useState(''),[rm,sr]=React.useState(false),fi=React.useRef(),c=me(),u=S.set;
- const pick=e=>{readImg(e.target.files[0],360,st);e.target.value=''},commit=()=>{se(false);const v=nm.trim();if(v&&v!=u.nome)upd(()=>u.nome=v);toast('Nome atualizado')},
+const Profile=()=>{const[ed,se]=React.useState(false),[nm,sn]=React.useState(''),[rm,sr]=React.useState(false),c=me(),u=S.set,fx=useEditorImagem(()=>S.set,IMG_CFG.perfil,'Enquadrar foto de perfil');
+ const commit=()=>{se(false);const v=nm.trim();if(v&&v!=u.nome)upd(()=>u.nome=v);toast('Nome atualizado')},
  SW=Object.entries(AC),TH=[['auto','Automático','monitor'],['dark','Escuro','moon'],['light','Claro','sun']];
- return h`<div class="pf"><input ref=${fi} type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden onChange=${pick}/>
+ return h`<div class="pf">${fx.input}
  <section class="pf-hero"><div class="pf-ban" aria-hidden="true"></div>
-  <div class="pf-id"><button class="pf-av" onClick=${()=>fi.current.click()} aria-label=${u.img?'Substituir foto de perfil':'Escolher foto de perfil'}><${Avatar} img=${u.img} s=${176} ic=${78}/><span class="pf-cam"><${I} n="camera" s=${18}/></span><span class="pf-ov">${u.img?'Substituir foto':'Escolher foto'}</span></button>
+  <div class="pf-id"><span class="av-w"><button class="pf-av" onClick=${fx.escolher} aria-label=${u.img?'Substituir foto de perfil':'Escolher foto de perfil'}><${Avatar} img=${u.img} s=${176} ic=${78}/><span class="pf-cam"><${I} n="camera" s=${18}/></span><span class="pf-ov">${u.img?'Substituir foto':'Escolher foto'}</span></button>${u.img&&h`<button type="button" class="av-adj" onClick=${fx.ajustar} aria-label="Ajustar enquadramento da foto de perfil" title="Ajustar enquadramento"><${I} n="crop" s=${16}/></button>`}</span>
   <div class="pf-tx"><div class="tg">PERFIL</div>
    ${ed?h`<input class="pf-in" autoFocus aria-label="Nome do usuário" value=${nm} maxLength=${40} onChange=${e=>sn(e.target.value)} onInput=${e=>sn(e.target.value)} onKeyDown=${e=>{if(e.key=='Enter')commit();if(e.key=='Escape')se(false)}} onBlur=${commit}/>`:h`<h1 class="pf-nm">${u.nome}<button class="b i" aria-label="Editar nome" onClick=${()=>{sn(u.nome);se(true)}}><${I} n="pen" s=${16}/></button></h1>`}
    <p class="pf-sub">${c?h`Jogando com <b>${c.nome}</b> · ${c.povo} · ${c.origem}`:'Nenhum personagem criado ainda'}</p>
-   <div class="row">${u.img&&!rm&&h`<${B} ic="trash" onClick=${()=>sr(true)}>Remover foto<//>`}${rm&&h`<span class="pf-cf">Remover a foto de perfil? <${B} p onClick=${()=>{upd(()=>u.img='');sr(false);toast('Foto removida')}}>Remover<//><${B} onClick=${()=>sr(false)}>Manter<//></span>`}<small class="mut">JPG, PNG, WebP ou GIF. Imagens grandes são reduzidas automaticamente.</small></div></div></div></section>
+   <div class="row">${u.img&&!rm&&h`<${B} ic="crop" onClick=${fx.ajustar}>Ajustar enquadramento<//><${B} ic="trash" onClick=${()=>sr(true)}>Remover foto<//>`}${rm&&h`<span class="pf-cf">Remover a foto de perfil? <${B} p onClick=${()=>{upd(()=>limparImagem(u));sr(false);toast('Foto removida')}}>Remover<//><${B} onClick=${()=>sr(false)}>Manter<//></span>`}<small class="mut">JPG, PNG, WebP ou GIF, até ${MAXIN} MB. Depois de escolher, ajuste o enquadramento.</small></div></div></div></section>
  ${AU.u&&(([u0,d0])=>h`<section class="pf-acc" aria-label="Conta"><div class="pf-acc-i"><small>Conta conectada</small><span class="pf-em" title=${AU.u.email}><${I} n="mail" s=${15}/><span>${u0}<wbr/>${d0!=null?'@'+d0:''}</span></span></div><${Logout} cls="pf-lo"/></section>`)(String(AU.u.email).split('@'))}
  <div class="pf-grid"><section><h2>Identificação</h2><dl class="pf-dl"><div><dt>Personagem principal</dt><dd>${c?c.nome:'—'}</dd></div><div><dt>Povo e origem</dt><dd>${c?c.povo+' · '+c.origem:'—'}</dd></div><div><dt>Rede de Conexões</dt><dd>${S.net.people.length} pessoa(s) · ${S.net.edges.length} conexão(ões)</dd></div><div><dt>Armazenamento</dt><dd>Neste navegador, separado por conta</dd></div></dl></section>
  <section><h2>Aparência</h2><div class="seg" role="radiogroup" aria-label="Tema">${TH.map(([v,l,ic])=>h`<button key=${v} role="radio" aria-checked=${u.theme==v} class=${u.theme==v?'on':''} onClick=${()=>{upd(()=>u.theme=v);applySet()}}><${I} n=${ic} s=${16}/>${l}</button>`)}</div>
  <div class="sw" role="radiogroup" aria-label="Cor de destaque">${SW.map(([n,v])=>h`<button key=${n} role="radio" aria-checked=${u.ac==v} aria-label=${n} title=${n} class=${u.ac==v?'on':''} style=${{'--sw':v}} onClick=${()=>{upd(()=>u.ac=v);applySet()}}></button>`)}</div></section></div>
- ${tmp&&h`<${Modal} t="Nova foto de perfil" onClose=${()=>st(null)}><div class="pf-pv"><${Avatar} img=${tmp} s=${200} ic=${80}/></div><p class="mut" style=${{textAlign:'center'}}>Assim ela aparecerá no perfil e na barra lateral.</p><div class="row" style=${{justifyContent:'center'}}><${B} p ic="check" onClick=${()=>{upd(()=>u.img=tmp);st(null);toast('Foto salva')}}>Confirmar<//><${B} ic="up" onClick=${()=>{st(null);fi.current.click()}}>Escolher outra<//><${B} ic="x" onClick=${()=>st(null)}>Cancelar<//></div><//>`}</div>`};
+ ${fx.modal}</div>`};
 const san=s=>{const d=new DOMParser().parseFromString('<div>'+s+'</div>','text/html'),r=d.body.firstChild;r.querySelectorAll('script,iframe,object,embed,style,link,img').forEach(n=>n.remove());r.querySelectorAll('*').forEach(n=>[...n.attributes].forEach(a=>{if(/^on/i.test(a.name)||/javascript:/i.test(a.value))n.removeAttribute(a.name)}));return r.innerHTML};
 const Hist=({c})=>{const[st,ss]=React.useState('Salvo ✔'),ref=React.useRef(),tm=React.useRef();c.hist=c.hist||{t:'',html:''};
  const flush=()=>{if(ref.current){c.hist.html=ref.current.innerHTML;save();ss('Salvo ✔')}};
@@ -891,6 +996,91 @@ const Cards=({k,sc,t,ic,cls,em})=>{const c=me();c[k]=c[k]||[];const[m,sm]=React.
  return h`<${PH} t=${t} sub=${c[k].length+(k=='magias'?' magia(s) registrada(s)':' habilidade(s) registrada(s)')} fn=${()=>sm(nw())} lb="Adicionar"/>
  ${!c[k].length?h`<${Empty} ic=${ic} t=${em[0]} d=${em[1]} cta=${em[2]} fn=${()=>sm(nw())}/>`:h`<div class="cg" style=${{gridTemplateColumns:'repeat(auto-fill,minmax(min(340px,100%),1fr))'}}>${c[k].map(it=>h`<${MD} key=${it.id} class=${'xc '+cls+(op[it.id]?' open':'')} initial=${{opacity:0,y:10}} animate=${{opacity:1,y:0}}><div class="row" style=${{margin:0}}><${I} n=${ic}/><h3 style=${{margin:0,flex:1}}>${it.nome}</h3>${it.cat&&h`<span class="tg">${it.cat}</span>`}</div><dl style=${{margin:0}} id=${'xd'+it.id}>${sc.filter(([f])=>f!='nome'&&f!='cat'&&it[f]).map(([f,l])=>h`<div key=${f}><dt>${l}</dt><dd>${it[f]}</dd></div>`)}${(it.extra||[]).map((x,i)=>h`<div key=${'x'+i}><dt>${x.k}</dt><dd>${x.v}</dd></div>`)}</dl>${more(it)&&h`<button type="button" class="lk xc-mais" aria-expanded=${!!op[it.id]} aria-controls=${'xd'+it.id} onClick=${()=>sop({...op,[it.id]:!op[it.id]})}>${op[it.id]?'Mostrar menos':'Ver detalhes completos'}</button>`}<div class="row"><${B} ic="pen" onClick=${()=>sm({...it})}>Editar<//><${B} ic="trash" onClick=${()=>{if(confirm('Remover "'+it.nome+'"?'))upd(()=>c[k]=c[k].filter(x=>x!=it))}}>Remover<//></div><//>`)}</div>`}
  ${m&&h`<${CardForm} it=${m} sc=${sc} onOk=${ok} onClose=${()=>sm(null)}/>`}`};
+</script>
+<script>/* ===== Enquadramento de imagens (avatar do perfil e retrato do personagem) =====
+   Armazenamento (mesmo do resto do app: localStorage da conta, sem Supabase Storage):
+   - img      recorte final já pronto (JPEG em data URL) — é o que todas as telas exibem, como antes;
+   - imgSrc   cópia reduzida da imagem original (lado maior ≤ IMG_SRC_LADO), para reabrir o editor sem perder o resto da foto;
+   - imgCrop  {x,y,z}: centro do recorte em coordenadas normalizadas da original (0..1) e zoom (1 = preenche o quadro).
+   Fichas antigas só têm img: o editor reabre a partir dela, centrada, sem alterar nada até o usuário salvar. */
+if(typeof IC!='undefined')IC.crop='M6 2v14a2 2 0 0 0 2 2h14 M18 22V8a2 2 0 0 0-2-2H2';
+const IMG_ZMAX=5,IMG_SRC_LADO=1280,IMG_SRC_LIM=240000,IMG_OUT_LIM=90000;
+/* Proporção real de cada espaço (CSS): avatar do perfil .uav e retrato da ficha .sh-av .av são círculos (1:1). */
+const IMG_CFG={perfil:{asp:1,round:true,out:400,nome:'foto de perfil'},retrato:{asp:1,round:true,out:320,nome:'retrato do personagem'}};
+/* Maior retângulo com a proporção asp que cabe na imagem (zoom 1), em pixels da original. */
+function cropBase(iw,ih,asp){return iw/ih>asp?{w:ih*asp,h:ih}:{w:iw,h:iw/asp}}
+/* Garante zoom 1..IMG_ZMAX e centro dentro dos limites: o recorte nunca sai da imagem (sem áreas vazias). */
+function cropClamp(st,iw,ih,asp){const z=Math.min(IMG_ZMAX,Math.max(1,+st.z||1)),b=cropBase(iw,ih,asp),hw=b.w/z/2/iw,hh=b.h/z/2/ih,
+  cl=(v,m)=>Math.min(1-m,Math.max(m,isFinite(+v)?+v:.5));return{x:cl(st.x,hw),y:cl(st.y,hh),z}}
+/* Retângulo de origem (pixels da original) para desenhar o recorte. */
+function cropRect(st,iw,ih,asp){const s=cropClamp(st,iw,ih,asp),b=cropBase(iw,ih,asp),w=b.w/s.z,h=b.h/s.z;return{sx:s.x*iw-w/2,sy:s.y*ih-h/2,sw:w,sh:h}}
+/* Posição da imagem num quadro de largura W (px): tamanho exibido e deslocamento. */
+function cropView(st,iw,ih,asp,W){const s=cropClamp(st,iw,ih,asp),k=W/(cropBase(iw,ih,asp).w/s.z),H=W/asp;return{w:iw*k,h:ih*k,l:W/2-s.x*iw*k,t:H/2-s.y*ih*k,k}}
+/* Arrastar dx,dy pixels de tela num quadro de largura W. */
+function cropPan(st,dx,dy,iw,ih,asp,W){const v=cropView(st,iw,ih,asp,W);return cropClamp({x:st.x-dx/(iw*v.k),y:st.y-dy/(ih*v.k),z:st.z},iw,ih,asp)}
+/* Zoom para z2 mantendo fixo o ponto (fx,fy) do quadro (0..1; 0.5 = centro). */
+function cropZoom(st,z2,fx,fy,iw,ih,asp){const s=cropClamp(st,iw,ih,asp),b=cropBase(iw,ih,asp),n=cropClamp({...s,z:z2},iw,ih,asp).z;
+ return cropClamp({x:s.x+(fx-.5)*(b.w/s.z-b.w/n)/iw,y:s.y+(fy-.5)*(b.h/s.z-b.h/n)/ih,z:n},iw,ih,asp)}
+/* Desenha em canvas e comprime em JPEG até caber em lim bytes (reduz a qualidade, depois o tamanho). */
+function jpegAte(desenha,W,H,lim){let z=1,q=.88,out='';for(let i=0;i<10;i++){const cv=document.createElement('canvas');cv.width=Math.max(1,Math.round(W*z));cv.height=Math.max(1,Math.round(H*z));
+  const x=cv.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,cv.width,cv.height);x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';desenha(x,cv.width,cv.height);
+  out=cv.toDataURL('image/jpeg',q);if(out.length*.75<=lim)break;if(q>.6)q-=.1;else z*=.85}return out}
+/* Recorte final (out × out/asp) e cópia reduzida da original para reedição. */
+function gerarRecorte(el,st,cfg){const iw=el.naturalWidth,ih=el.naturalHeight,r=cropRect(st,iw,ih,cfg.asp),W=cfg.out,H=Math.round(cfg.out/cfg.asp);
+ return jpegAte((x,w,h)=>x.drawImage(el,r.sx,r.sy,r.sw,r.sh,0,0,w,h),W,H,IMG_OUT_LIM)}
+function gerarFonte(el){const iw=el.naturalWidth,ih=el.naturalHeight,k=Math.min(1,IMG_SRC_LADO/Math.max(iw,ih));return jpegAte((x,w,h)=>x.drawImage(el,0,0,w,h),iw*k,ih*k,IMG_SRC_LIM)}
+/* Grava o resultado no objeto (S.set ou ficha). Só aqui a imagem anterior é substituída. Sem espaço, guarda só o recorte; se nem isso couber, restaura tudo. */
+function aplicarImagem(o,r){const ant={img:o.img,imgSrc:o.imgSrc,imgCrop:o.imgCrop};Object.assign(o,{img:r.img,imgSrc:r.src||'',imgCrop:r.src?r.crop:null});
+ if(save()){R();return true}
+ o.imgSrc='';o.imgCrop=null;if(save()){R();toast('Enquadramento salvo. Sem espaço para guardar a original: um novo ajuste partirá do recorte.');return 'parcial'}
+ Object.assign(o,ant);save();R();return false}
+const limparImagem=o=>{o.img='';o.imgSrc='';o.imgCrop=null};
+
+/* Editor: arrastar (mouse/toque), pinça para zoom, roda do mouse, controle deslizante e teclado (setas, + e −). */
+const Cropper=({src,ini,fonte,cfg,titulo,onSave,onCancel,onTrocar})=>{const[im,sim]=React.useState(null),[st,sst]=React.useState(ini||{x:.5,y:.5,z:1}),[busy,sb]=React.useState(false),
+  fr=React.useRef(),ptr=React.useRef(new Map()),cur=React.useRef(st),asp=cfg.asp;cur.current=st;
+ React.useEffect(()=>{let vivo=1;const el=new Image();el.decoding='async';el.onload=()=>{if(!vivo)return;if(!el.naturalWidth||!el.naturalHeight){toast('Imagem inválida.');onCancel();return}
+   sim({el,iw:el.naturalWidth,ih:el.naturalHeight});sst(s=>cropClamp(s,el.naturalWidth,el.naturalHeight,asp))};el.onerror=()=>{if(vivo){toast('Não foi possível ler a imagem.');onCancel()}};el.src=src;return()=>{vivo=0}},[src]);
+ /* Largura do quadro na tela no momento do gesto (inclui a escala da animação, que é o que importa para converter pixels de tela). */
+ const Wt=()=>fr.current?fr.current.getBoundingClientRect().width:1;
+ const set=fn=>{if(!im)return;sst(s=>fn(s,im.iw,im.ih))},zoomEm=(z2,fx=.5,fy=.5)=>set((s,iw,ih)=>cropZoom(s,z2,fx,fy,iw,ih,asp)),
+  rel=(cx,cy)=>{const b=fr.current.getBoundingClientRect();return[(cx-b.left)/b.width,(cy-b.top)/b.height]};
+ /* Roda do mouse: listener nativo não passivo para impedir a rolagem da página por trás do modal. */
+ React.useEffect(()=>{const f=fr.current;if(!f)return;const wh=e=>{e.preventDefault();const[fx,fy]=rel(e.clientX,e.clientY);zoomEm(cur.current.z*Math.exp(-e.deltaY*.0015),fx,fy)};f.addEventListener('wheel',wh,{passive:false});return()=>f.removeEventListener('wheel',wh)},[im]);
+ const down=e=>{if(!im)return;try{e.currentTarget.setPointerCapture(e.pointerId)}catch(_){}ptr.current.set(e.pointerId,{x:e.clientX,y:e.clientY})},
+  move=e=>{const P=ptr.current;if(!im||!P.has(e.pointerId))return;e.preventDefault();const ant=[...P.values()].slice(0,2).map(p=>({...p}));P.set(e.pointerId,{x:e.clientX,y:e.clientY});const nov=[...P.values()].slice(0,2);
+   const W=Wt();if(nov.length<2){const d=ant[0];set((s,iw,ih)=>cropPan(s,e.clientX-d.x,e.clientY-d.y,iw,ih,asp,W));return}
+   const dist=a=>Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)||1,mid=a=>({x:(a[0].x+a[1].x)/2,y:(a[0].y+a[1].y)/2}),m0=mid(ant),m1=mid(nov),[fx,fy]=rel(m1.x,m1.y);
+   set((s,iw,ih)=>cropZoom(cropPan(s,m1.x-m0.x,m1.y-m0.y,iw,ih,asp,W),s.z*dist(nov)/dist(ant),fx,fy,iw,ih,asp))},
+  up=e=>{ptr.current.delete(e.pointerId)},
+  key=e=>{const W=Wt(),p=.03*W,k={ArrowLeft:[p,0],ArrowRight:[-p,0],ArrowUp:[0,p],ArrowDown:[0,-p]}[e.key];if(k){e.preventDefault();set((s,iw,ih)=>cropPan(s,k[0],k[1],iw,ih,asp,W))}
+   else if(e.key=='+'||e.key=='='){e.preventDefault();zoomEm(st.z*1.1)}else if(e.key=='-'||e.key=='_'){e.preventDefault();zoomEm(st.z/1.1)}else if(e.key=='0'){e.preventDefault();set(()=>({x:.5,y:.5,z:1}))}};
+ /* Posição em % do quadro (largura 1): independe de medições, da animação do modal e do tamanho de cada prévia. */
+ const vista=cls=>{if(!im)return null;const v=cropView(st,im.iw,im.ih,asp,1),P=n=>n*100+'%';return h`<img src=${src} alt="" draggable=${false} class=${cls} style=${{width:P(v.w),height:P(v.h*asp),left:P(v.l),top:P(v.t*asp)}}/>`},
+  peq=im&&Math.min(cropBase(im.iw,im.ih,asp).w/st.z,cropBase(im.iw,im.ih,asp).h/st.z)<cfg.out*.75,
+  salvar=()=>{if(!im||busy)return;sb(true);setTimeout(()=>{try{const crop=cropClamp(st,im.iw,im.ih,asp);if(!onSave({img:gerarRecorte(im.el,crop,cfg),src:fonte||gerarFonte(im.el),crop}))sb(false)}catch(err){toast('Não foi possível gerar o recorte.');sb(false)}},20)},
+  rd=cfg.round?' cr-rd':'';
+ return h`<${Modal} t=${titulo} onClose=${onCancel}><div class="cr">
+  <div ref=${fr} class=${'cr-f'+rd+(im?'':' cr-ld')} style=${{aspectRatio:String(asp)}} tabIndex="0" role="group" aria-roledescription="editor de enquadramento" aria-label="Enquadramento: arraste para mover; pinça, roda do mouse ou teclas + e − para zoom; setas movem; 0 restaura"
+   onPointerDown=${down} onPointerMove=${move} onPointerUp=${up} onPointerCancel=${up} onLostPointerCapture=${up} onKeyDown=${key}>${vista('cr-i')}<span class="cr-m" aria-hidden="true"></span>${!im&&h`<span class="cr-w">Carregando…</span>`}</div>
+  <div class="cr-z"><button type="button" class="b i" aria-label="Diminuir zoom" disabled=${!im||st.z<=1} onClick=${()=>zoomEm(st.z/1.2)}><${I} n="minus" s=${16}/></button>
+   <input type="range" min="1" max=${IMG_ZMAX} step="0.01" value=${st.z} aria-label="Zoom" aria-valuetext=${Math.round(st.z*100)+'%'} disabled=${!im} onInput=${e=>zoomEm(+e.target.value)} onChange=${e=>zoomEm(+e.target.value)}/>
+   <button type="button" class="b i" aria-label="Aumentar zoom" disabled=${!im||st.z>=IMG_ZMAX} onClick=${()=>zoomEm(st.z*1.2)}><${I} n="plus" s=${16}/></button></div>
+  <div class="cr-pv" aria-label="Prévia"><small class="mut">Prévia</small>${[72,40].map(s=>h`<span key=${s} class=${'cr-p'+rd} style=${{width:s,height:s/asp}}>${vista('cr-i')}</span>`)}</div>
+  <small class="mut cr-dc">Arraste para posicionar${matchMedia('(pointer:coarse)').matches?' · use dois dedos para o zoom':' · use a roda do mouse ou o controle para o zoom'}.${peq?' A área escolhida tem pouca resolução: a foto pode perder nitidez.':''}</small></div>
+  <div class="row cr-ac">${onTrocar&&h`<${B} ic="up" onClick=${onTrocar}>Trocar imagem<//>`}<${B} ic="x" onClick=${onCancel}>Cancelar<//><${B} p ic="check" disabled=${!im||busy} onClick=${salvar}>${busy?'Salvando…':'Salvar enquadramento'}<//></div><//>`};
+
+/* Liga o editor a um alvo (função que devolve S.set ou a ficha). Devolve o input de arquivo oculto, o modal e as ações. */
+function useEditorImagem(alvo,cfg,titulo){const[ed,se]=React.useState(null),fi=React.useRef();
+ React.useEffect(()=>()=>{if(ed&&ed.url)URL.revokeObjectURL(ed.url)},[ed]);
+ const arquivo=f=>{if(!f)return;if(!IMGOK.includes(f.type)){toast('Formato inválido. Use JPG, PNG, WebP ou GIF.');return}if(f.size>MAXIN*1048576){toast('Imagem acima de '+MAXIN+' MB. Escolha um arquivo menor.');return}
+   const u=URL.createObjectURL(f);se({src:u,url:u,ini:null,fonte:null})},
+  ajustar=()=>{const o=alvo();if(!o||!o.img)return;se({src:o.imgSrc||o.img,ini:o.imgSrc&&o.imgCrop||null,fonte:o.imgSrc||null})},
+  escolher=()=>fi.current&&fi.current.click();
+ const input=h`<input ref=${fi} type="file" accept=${IMGOK.join(',')} hidden aria-label=${'Escolher '+cfg.nome} onChange=${e=>{arquivo(e.target.files[0]);e.target.value=''}}/>`,
+  modal=ed&&ReactDOM.createPortal(h`<${Cropper} key=${ed.src} src=${ed.src} ini=${ed.ini} fonte=${ed.fonte} cfg=${cfg} titulo=${titulo} onCancel=${()=>se(null)} onTrocar=${escolher}
+   onSave=${r=>{const o=alvo(),ok=o&&aplicarImagem(o,r);if(ok){se(null);if(ok===true)toast('Enquadramento salvo');return true}if(o)toast('Não foi possível salvar: armazenamento do navegador cheio.');return false}}/>`,document.body);
+ return{input,modal,escolher,ajustar,arquivo}}
 </script>
 <script>/* Rede de Conexões — constelação SVG em tela cheia. Nós = personagem principal (ficha) + pessoas independentes (S.net.people). */
 const ETY={'Amizade':'#5ee7ff','Inimizade':'#ff5f6d','Parentesco':'#f0c76a','Aliança':'#35d6c0','Rivalidade':'#ff9f43','Romance':'#ff5fc8','Mentoria':'#b48cff','Lealdade':'#7aa2ff','Traição':'#d63a3a','Relação desconhecida':'#9aa3d6','Personalizada':'#e8e8ff'};

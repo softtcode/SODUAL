@@ -79,15 +79,15 @@ test('5. pontos não distribuídos impedem a criação', () => {
 });
 
 test('6. mana: fórmula racial (D4 + Corpo) a partir da rolagem registrada', () => {
-  assert.equal(F.manaFormula('Sáelios'), '6D4 + Corpo');
-  assert.equal(F.manaFormula('Arveni'), '5D4 + Corpo');
-  assert.equal(F.manaFormula('Dárnios'), '4D4 + Corpo');
-  eq(F.manaLimites('Sáelios', 3), { min: 9, max: 27 });
+  assert.equal(F.manaFormula('Sáelios'), '4D4 + Corpo');
+  assert.equal(F.manaFormula('Arveni'), '3D4 + Corpo');
+  assert.equal(F.manaFormula('Dárnios'), '2D4 + Corpo');
+  eq(F.manaLimites('Sáelios', 3), { min: 7, max: 19 });
   const w = valido({ mr: undefined }); delete w.mr;
   assert.equal(F.calcManaInicial(w), null);                 // sem rolagem não há reserva
-  rolarFixo(w, 3);                                          // 5 dados × 3 = 15
+  rolarFixo(w, 3);                                          // 3 dados × 3 = 9
   const m = F.calcManaInicial(w);
-  eq({ ...m, rol: [...m.rol] }, { regra: 'rolagem-3-tentativas', dados: '5D4', rol: [3, 3, 3, 3, 3], base: 15, corpo: 2, total: 17, tentativa: 1, tentativas: 3 });
+  eq({ ...m, rol: [...m.rol] }, { regra: 'rolagem-3-tentativas', dados: '3D4', rol: [3, 3, 3], base: 9, corpo: 2, total: 11, tentativa: 1, tentativas: 3 });
 });
 
 test('7. mana sem rolagem ou não mantida impede a criação', () => {
@@ -103,11 +103,11 @@ test('7. mana sem rolagem ou não mantida impede a criação', () => {
 
 test('8. alterar Corpo recalcula só o total, sem nova rolagem', () => {
   const w = valido();
-  assert.equal(F.calcManaInicial(w).total, 17);
+  assert.equal(F.calcManaInicial(w).total, 11);
   F.setAtributo(w, 'car', 0); F.setAtributo(w, 'cor', 3);
-  assert.equal(F.calcManaInicial(w).total, 18);
+  assert.equal(F.calcManaInicial(w).total, 12);
   assert.equal(w.mr.usadas, 1);
-  assert.equal(F.mk(w).manaMax, 18);
+  assert.equal(F.mk(w).manaMax, 12);
 });
 
 test('9. trocar o povo limpa escolhas raciais; depois da rolagem o povo fica travado', () => {
@@ -190,14 +190,14 @@ test('ficha gerada: sem benefícios não documentados e habilidade sem duplicaç
   const w = valido();
   w.narr = { conceito: 'Cadete', aparencia: 'Alta', historia: 'Linha 1\n\n<b>Linha 2</b>', objetivos: 'Ser escolhida', obs: '' };
   const c = F.mk(w);
-  assert.equal(c.nucleo, '');                         // núcleo não é fixado automaticamente
+  assert.equal(c.nucleo, 'Preto');                    // toda ficha nova começa no núcleo Preto
   eq([...c.money], [0, 0, 0]);
   assert.equal(c.bag.length, 0); assert.equal(c.magias.length, 0); assert.equal(c.cin, ''); assert.equal(c.eq, '');
   eq({ ...c.sk }, { Atletismo: 2, Natureza: 2 }); // só as raciais, em Apto
   assert.equal(c.habs.filter(x => x.cat === 'Habilidade racial').length, 1);
   assert.equal(c.habs[0].nome, 'Leitura Social');
   assert.match(c.habs[0].efe, /sinais de mentira/);
-  assert.equal(c.manaMax, 17); assert.equal(c.mana, 17); assert.equal(c.mana0.base, 15); eq(c.mana0.rol, [3, 3, 3, 3, 3]);
+  assert.equal(c.manaMax, 11); assert.equal(c.mana, 11); assert.equal(c.mana0.base, 9); eq(c.mana0.rol, [3, 3, 3]);
   assert.equal(c.narr.conceito, 'Cadete');
   assert.equal(c.hist.html, '<p>Linha 1</p><p>&lt;b&gt;Linha 2&lt;/b&gt;</p>'); // texto escapado
   for (const k of ['nivel', 'classe', 'pv', 'proficiencia', 'dragao']) assert.equal(k in c, false, k);
@@ -215,7 +215,7 @@ test('16. salvar e recarregar ficha válida preserva tudo', () => {
   const env2 = load({ 'sodual.v1': raw });
   const back = env2.get('S').chars[0];
   assert.equal(back.nome, 'Ravi');
-  assert.equal(back.manaMax, 27);
+  assert.equal(back.manaMax, 19);
   eq(JSON.parse(JSON.stringify(back)), JSON.parse(JSON.stringify(c)));
   assert.equal(env2.get('S').v, 3);
 });
