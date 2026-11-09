@@ -56,9 +56,41 @@ Não desligue esses limites: eles protegem a conta dos jogadores contra força b
 - **Favicon:** `favicon.ico` na raiz (16 a 256 px, fundo transparente), referenciado em `index.html` como `favicon.ico?v=3`. Ao trocar o arquivo, aumente o `?v=` para furar o cache. O `vercel.json` manda revalidar `/favicon.ico`, e o `sodual-single.html` leva o ícone embutido.
 - **Aparência:** tema e cor de destaque ficam em Configurações › Aparência (valores em `S.set.theme` e `S.set.ac`, aplicados na hora por `applySet`).
 
+## Direção de arte 4.2
+- **Rede:** céu em três camadas de estrelas (`STARS`): ~80% minúsculas, ~15% pequenas e ~5% de destaque, com halo em gradiente e sem filtros de desfoque. As nebulosas (`NEB`) são gradientes de baixa opacidade. Só ~8 estrelas cintilam (`.stw`, lento).
+  - A geometria astral fica só nos cantos (`SkyCanto`, tamanho fixo em px), e o centro fica limpo.
+  - Os vínculos ganham um traço escuro por baixo para dar contraste, sem animação contínua.
+  - Teste: `tests/ceu.test.mjs`.
+- **Biblioteca:** compêndio com cabeçalho editorial, índice de 5 capítulos (destaque do capítulo em leitura), capítulos numerados e tabelas com cabeçalho e rolagem horizontal indicada no celular.
+  - Os dados são as mesmas constantes de sempre.
+  - As duas tabelas de postura viraram uma só, sem perder valores.
+  - Os 14 estágios do núcleo ficam num bloco recolhível.
+- **Meu Perfil:** título equipado com ornamento, insígnias em medalhão, ações de foto secundárias, Jornada destacada e Conta discreta.
+- **História do RPG:** partes numeradas pela ordem de leitura, "Capítulo NN", divisores ornamentais, letra capitular no primeiro parágrafo, o lema em citação, coluna de 720 px e "Voltar ao índice" no celular e no tablet.
+- **Polimento:**
+  - Combate: colunas rebalanceadas para a tabela de Condição caber.
+  - Livro de Regras: cabeçalho editorial e categorias coloridas no changelog.
+  - "Limpar este dispositivo" com estilo de ação destrutiva.
+  - Ajuda da Rede atualizada.
+  - `.net` e `.mn-c` consolidados numa regra cada.
+  - A classe raiz da Biblioteca é `.bib` (`.lb` já era o rótulo da barra lateral).
+
+## App 4.1 — Rede, Livro de Regras, combate e histórico
+- **Rede de Conexões** (`src/network.js`, bloco "REDE DE CONEXÕES 4.1" em `styles.css`): mapa astral com barra superior recolhível, ferramentas agrupadas (Visualização | Edição) e painel contextual com botão de fechar e tecla Esc. No desktop o painel é uma coluna à direita; no celular, uma folha inferior.
+  - Barra recolhida: a preferência fica só neste navegador (`localStorage` `sodual.rede.recolhida`), fora de `S` e da nuvem. No celular começa recolhida.
+  - Astros focáveis pelo teclado (Tab, depois Enter ou Espaço).
+  - Zoom, pan, arraste, vínculos, reorganização e `S.net.pos` mantêm a mesma lógica e o mesmo formato de dados.
+- **Livro de Regras** (`Book` em `src/pages.js`):
+  1. O PDF vem primeiro, com Ler, Baixar e Abrir outro PDF.
+  2. Abaixo, **Últimas atualizações** (`ATUALIZACOES`): só mudanças documentadas no Livro I, sem datas.
+  3. Por último, **Consultar regras da mesa e pendências**, recolhível. Os mesmos itens de `PEND`, separados em oficiais, mesa e pendentes.
+- **Mana no Modo de Combate** (`ManaCtl` em `src/ui.js`): o mesmo `c.mana` da ficha e do cabeçalho, alterado por `ajustarMana`/`definirMana` (`src/rules.js`). Fica sempre entre 0 e a máxima e passa pelo fluxo normal `upd → save → sincronização`. No celular aparece no topo do combate; no desktop, acima da Condição.
+- **Histórico da região** (`RegHist`): recolhido por padrão, mostra todos os registros de `w.log` (antes eram só os 6 últimos), sem reescrever nada.
+- **Histórico de combate** (`CbHist`): filtro por região só de exibição. Cada evento existe uma única vez em `c.cb`, então não há duplicatas.
+
 ## Salvamento na nuvem — Entrega 6 (validação final)
 **Validado automaticamente**
-- `node --test "tests/*.test.mjs"` executa 128 testes. Eles cobrem os 25 casos obrigatórios da especificação (sincronização, conflitos, offline, troca de conta, backup, exclusões, imagens e preservação de ferimentos, mana, núcleo, perfil e rede), além do isolamento entre contas no Storage.
+- `node --test "tests/*.test.mjs"` executa 134 testes. Eles cobrem os 25 casos obrigatórios da especificação (sincronização, conflitos, offline, troca de conta, backup, exclusões, imagens e preservação de ferimentos, mana, núcleo, perfil e rede), além do isolamento entre contas no Storage.
 - `node supabase/tests/run_local.mjs .` valida as migrações 001 e 002 em Postgres real (PGlite). Também confere se os testes SQL apanham 9 sabotagens de segurança.
 - No Supabase real: `001_cloud_sync_test.sql` e `002_images_storage_test.sql` passaram. Os dois terminam com a linha `resultado`.
 - Responsividade: com 375, 768 e 1024 px, nenhuma página transborda na horizontal (a Rede é um mapa navegável).

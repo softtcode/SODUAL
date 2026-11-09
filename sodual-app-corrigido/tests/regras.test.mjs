@@ -273,3 +273,28 @@ test('0.4 compatibilidade: carregar e salvar uma ficha antiga não altera nada (
   const c = JSON.parse(a).chars[0];
   assert.equal(c.nucleo, 'Laranja'); assert.equal(c.mana, 5); assert.equal(c.manaMax, 11); assert.equal(c.post, 'Defensiva'); assert.equal(c.ca, undefined); eq(c.sk, { Atletismo: 2 });
 });
+
+/* ===== 4.1: mana compartilhada (ficha, cabeçalho e Modo de Combate usam c.mana e estas funções) ===== */
+test('mana: ajustes de 1 em 1 entre 0 e a máxima; núcleo, máxima e registro da rolagem intactos', () => {
+  const c = { mana: 14, manaMax: 14, nucleo: 'Preto', mana0: { total: 14 } };
+  assert.equal(F.ajustarMana(c, 1), 14);                                  // não passa da máxima
+  assert.equal(F.ajustarMana(c, -1), 13); assert.equal(F.ajustarMana(c, -1), 12);
+  for (let i = 0; i < 20; i++) F.ajustarMana(c, -1);
+  assert.equal(c.mana, 0);                                                // nunca negativa
+  assert.equal(F.ajustarMana(c, 1), 1);
+  eq([c.manaMax, c.nucleo, c.mana0], [14, 'Preto', { total: 14 }]);
+});
+test('mana: valor digitado é saneado (inteiro, 0..máxima); registro antigo acima da máxima só desce', () => {
+  const c = { mana: 5, manaMax: 9 };
+  assert.equal(F.definirMana(c, '7'), 7); assert.equal(F.definirMana(c, 30), 9); assert.equal(F.definirMana(c, -4), 0);
+  assert.equal(F.definirMana(c, 'abc'), 0); assert.equal(F.definirMana(c, 3.8), 3);
+  const v = { mana: 12, manaMax: 9 };                                     // dado antigo/correção do mestre
+  assert.equal(F.ajustarMana(v, 1), 12); assert.equal(F.ajustarMana(v, -1), 11);
+  const s = { mana: 4, manaMax: 0 };                                       // sem máxima registrada: só o piso
+  assert.equal(F.ajustarMana(s, 1), 5); assert.equal(F.definirMana(s, -1), 0);
+});
+test('mana: o ajuste passa pelo save() normal (localStorage) e o valor é o mesmo lido pela ficha', () => {
+  const e = load(); vm.runInContext('LS="sodual.v1.u.m";S.chars=[{id:"m1",nome:"M",a:{},w:{},mana:14,manaMax:14,nucleo:"Preto"}];ajustarMana(S.chars[0],-2);save()', e.ctx);
+  assert.equal(JSON.parse(e.mem['sodual.v1.u.m']).chars[0].mana, 12);
+  const e2 = load(e.mem); assert.equal(e2.get('(loadS("sodual.v1.u.m"),S.chars[0].mana)'), 12); assert.equal(e2.get('S.chars[0].nucleo'), 'Preto');
+});

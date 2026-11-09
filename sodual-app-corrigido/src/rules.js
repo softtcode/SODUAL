@@ -114,6 +114,13 @@ const temTenacidade=c=>!!c&&c.povo=='Dárnios',tenacidade=(c,v)=>temTenacidade(c
 function pen(c,r){return tenacidade(c,penBase(c,r))}
 /* Penalidade geral do Fatal (−3 em qualquer ação, sem somar às regionais); com Tenacidade, −2. O membro Fatal continua inutilizado. */
 const penGeral=c=>Object.values(c.w||{}).some(x=>x&&x.g==5)?tenacidade(c,-3):0,fmtPen=v=>v<0?'−'+(-v):String(v);
+/* Mana atual (ficha, cabeçalho e Modo de Combate usam este mesmo dado e estas mesmas funções, sempre via upd → save → sincronização).
+   Ajuste manual: inteiro entre 0 e a mana máxima (sem máxima registrada, só o piso). Nunca mexe em manaMax, mana0 ou no núcleo. */
+const manaLim=(c,v)=>{v=Math.trunc(+v)||0;const mx=+c.manaMax||0;return Math.max(0,mx>0?Math.min(mx,v):v)};
+function definirMana(c,v){c.mana=manaLim(c,v);return c.mana}
+function ajustarMana(c,d){const a=Math.trunc(+c.mana)||0,mx=+c.manaMax||0;
+ /* Acima da máxima (registro antigo/correção do mestre): só permite gastar; nunca sobe mais. */
+ if(d>0&&mx>0&&a>=mx)return a;c.mana=d<0?Math.max(0,a+d):manaLim(c,a+d);return c.mana}
 /* Conhecimento Ampliado (Arveni, ed. 0.4): duas escolhas adicionais de perícia em c.ca (metadado; nenhum bônus em c.sk). */
 const CA_MAX=2,temConhecimento=c=>!!c&&c.povo=='Arveni',conhecimento=c=>(Array.isArray(c&&c.ca)?c.ca:[]).slice(0,CA_MAX).map(v=>SK[v]?v:'');
 function setConhecimento(c,i,v){if(!temConhecimento(c)||!(i>=0&&i<CA_MAX)||(v!==''&&!SK[v]))return false;const a=conhecimento(c);while(a.length<CA_MAX)a.push('');
