@@ -6,7 +6,8 @@
 window.SODUAL_CONFIG = {
   supabaseUrl: 'https://SEU-PROJETO.supabase.co',
   supabaseKey: 'sb_publishable_COLE_AQUI',
-  // Opcional: URL para onde os e-mails de confirmação/recuperação devem voltar. Padrão: o endereço atual do app.
+  // Opcional e só para o arquivo aberto direto do disco (file://): URL para onde os e-mails de confirmação/recuperação voltam.
+  // Em http(s) os links sempre voltam ao endereço atual do app; esse endereço precisa estar em Redirect URLs no Supabase.
   siteUrl: '',
   // Devem espelhar Authentication → Sign In / Providers → Email → Password requirements no painel do Supabase.
   senhaMin: 8,

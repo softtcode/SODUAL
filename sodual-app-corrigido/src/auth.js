@@ -34,7 +34,11 @@ const AERR=e=>{if(!e)return'';const c=e.code||'',s=e.status,m=String(e.message||
  if(/session|refresh_token/.test(c)||e.name=='AuthSessionMissingError')return'Sua sessão expirou. Peça um novo link de recuperação.';
  return'Não foi possível concluir agora. Tente de novo em instantes.'};
 const LINKMSG=a=>a.code=='otp_expired'?'O link expirou ou já foi usado. Peça um novo.':'Não foi possível validar o link do e-mail. Peça um novo.';
-const redir=()=>CFG.siteUrl||location.origin+location.pathname;
+/* Para onde os links de e-mail (confirmação, recuperação de senha) devem voltar: SEMPRE o endereço em que o site está aberto agora
+   (local, preview ou produção), para o jogador voltar à mesma versão em que pediu o link. CFG.siteUrl (SODUAL_SITE_URL) só é usado
+   quando não há endereço web (arquivo aberto do disco). O Supabase só aceita endereços listados em Authentication → URL Configuration
+   → Redirect URLs; se o endereço não estiver lá, ele usa a "Site URL" do projeto (ver README). */
+const redir=()=>/^https?:$/.test(location.protocol)?location.origin+location.pathname:(CFG.siteUrl||location.origin+location.pathname);
 /* ---- Conta ativa: troca a chave de dados e reinicia o estado da interface ---- */
 function remember(u){if(!u||!u.email)return;const n=dname(u)||(S.set.nome&&S.set.nome!='Viajante'?S.set.nome:'');lsS(LAST,JSON.stringify({id:u.id,email:u.email,nome:n}))}
 function openAccount(u){const had=loadS(ukey(u.id));if(!had){const n=dname(u);if(n)S.set.nome=n.slice(0,40);save()}ui=UI0();AU.u=u;remember(u);typeof applySet=='function'&&applySet()}
@@ -43,7 +47,9 @@ function closeAccount(){if(AU.u){save();remember(AU.u)}AU.u=null;LS='';S=DEF();u
 const legacy=()=>{try{const d=JSON.parse(lsG(LS0));const n=(d.chars||[]).length,p=((d.net||{}).people||[]).length;return n||p?{n,p,nome:n?d.chars[0].nome:''}:null}catch(e){return null}};
 const canImport=()=>!!AU.u&&!lsG(OWN)&&!!legacy()&&!S.chars.length&&!S.net.people.length&&!S.net.edges.length;
 function importLegacy(){if(!canImport())return false;const d=norm(JSON.parse(lsG(LS0))),n=S.set.nome;if(n&&n!='Viajante'&&(!d.set.nome||d.set.nome=='Viajante'))d.set.nome=n;S=d;if(!save())return false;lsS(OWN,AU.u.id);ui=UI0();applySet();return true}
-async function sair(){if(!SBC)return false;save();const{error}=await SBC.auth.signOut({scope:'local'});if(error){toast('Não foi possível sair: '+AERR(error));return false}return true}
+/* Logout: grava localmente, tenta enviar o pendente por até 2,5 s (o que não for enviado continua salvo neste dispositivo
+   e volta a sincronizar no próximo login desta conta) e só então encerra a sessão. */
+async function sair(){if(!SBC)return false;save();if(typeof syncDescarregar=='function')try{await syncDescarregar(2500)}catch(e){}const{error}=await SBC.auth.signOut({scope:'local'});if(error){toast('Não foi possível sair: '+AERR(error));return false}return true}
 /* ---- Componentes ---- */
 const Brand=({s})=>h`<div class=${'au-br'+(s?' s':'')}><span class="au-sl" aria-hidden="true"><${I} n="flame" s=${s?18:26}/></span><span class="au-nm">SODUAL</span></div>`;
 const AFld=({id,l,v,set,err,hint,pw,show,tog,children,...r})=>h`<div class=${'au-f'+(err?' bad':'')}><label for=${id}>${l}</label><div class=${pw?'au-pw':''}><input id=${id} value=${v} onChange=${e=>set(e.target.value)} aria-invalid=${err?'true':undefined} aria-describedby=${err?id+'-e':hint?id+'-h':undefined} type=${pw?(show?'text':'password'):r.type||'text'} ...${r}/>${pw&&tog&&h`<button type="button" class="au-eye" aria-label=${show?'Ocultar senha':'Mostrar senha'} aria-pressed=${!!show} aria-controls=${id} onClick=${tog}><${I} n=${show?'eyeoff':'eye'} s=${20}/></button>`}</div>${err?h`<small class="au-e" id=${id+'-e'}>${err}</small>`:hint&&h`<small class="au-h" id=${id+'-h'}>${hint}</small>`}${children}</div>`;
@@ -51,7 +57,7 @@ const Rules=({p,id})=>h`<ul class="au-rq" id=${id} aria-label="Requisitos da sen
 const Load=({t='Abrindo o SODUAL…',err,retry})=>h`<div class="au au-ld" role="status" aria-live="polite"><div class="au-ldb"><span class="au-ring" aria-hidden="true"><${I} n="flame" s=${30}/></span><span class="au-nm">SODUAL</span><p>${err||t}</p>${retry&&h`<button class="b p au-btn" onClick=${retry}>Tentar de novo</button>`}</div></div>`;
 /* Arte da tela de login: dragãozinho em pixel art (assets/dragao-login.webp, 1312×1199). Uma só imagem: painel lateral no desktop, faixa no topo do cartão em tablets e celulares. */
 const AU_IMG=(window.IMGS&&IMGS['dragao-login'])||'assets/dragao-login.webp',AuImg=({c})=>h`<img class=${c} src=${AU_IMG} alt="" width="1312" height="1199" decoding="async" fetchpriority="high" draggable="false"/>`;
-const Shell=({children,wide})=>h`<div class="au"><aside class="au-art" aria-hidden="true"><${AuImg} c="au-img"/><div class="au-art-t"><${Brand}/><p class="au-tag">Fichas, lore e constelações do seu RPG — guardadas sob o seu nome.</p><div class="au-orn"><i></i><${I} n="flame" s=${14}/><i></i></div></div></aside><main class="au-m" id="main"><div class=${'au-c'+(wide?' w':'')}><div class="au-ban" aria-hidden="true"><${AuImg} c="au-bimg"/></div><${Brand} s/>${children}</div></main></div>`;
+const Shell=({children,wide,home})=>h`<div class="au"><aside class="au-art" aria-hidden="true"><${AuImg} c="au-img"/><div class="au-art-t"><${Brand}/><p class="au-tag">Fichas, lore e constelações do seu RPG — guardadas sob o seu nome.</p><div class="au-orn"><i></i><${I} n="flame" s=${14}/><i></i></div></div></aside><main class="au-m" id="main"><div class="au-col"><div class=${'au-c'+(wide?' w':'')}><div class="au-ban" aria-hidden="true"><${AuImg} c="au-bimg"/></div><${Brand} s/>${children}</div>${home&&h`<nav class="au-home" aria-label="Página pública"><a class="au-back" href=${H_LAND} onClick=${e=>{e.preventDefault();setHash(H_LAND)}}><${I} n="left" s=${16}/>Conhecer o SODUAL</a></nav>`}</div></main></div>`;
 const Auth=({start,note})=>{const L=lastAcc(),[m,sm]=React.useState(start||(L?'last':'login')),[em,se]=React.useState(start=='reset'&&AU.u?AU.u.email:''),[pw,sp]=React.useState(''),[p2,sp2]=React.useState(''),[nm,sn]=React.useState(''),[sh,ssh]=React.useState(false),[err,ser]=React.useState({}),[msg,smsg]=React.useState(note||null),[busy,sb]=React.useState(false),[cd,scd]=React.useState(0),[last,sl]=React.useState(L),hr=React.useRef(),first=React.useRef(true);
  React.useEffect(()=>{if(first.current){first.current=false;return}hr.current&&hr.current.focus({preventScroll:true});try{scrollTo(0,0)}catch(e){}},[m]);
  React.useEffect(()=>{if(cd<=0)return;const t=setTimeout(()=>scd(cd-1),1000);return()=>clearTimeout(t)},[cd]);
@@ -119,7 +125,7 @@ const Auth=({start,note})=>{const L=lastAcc(),[m,sm]=React.useState(start||(L?'l
   <${AFld} id="au-p2" l="Confirmar nova senha" v=${p2} set=${sp2} err=${err.p2} autoComplete="new-password" pw show=${sh}/>
   ${Btn({t:'Salvar nova senha',bt:'Salvando…'})}</form>
   <p class="au-sw"><button class="au-lk" onClick=${cancelReset} disabled=${busy}>Cancelar e voltar ao login</button></p>`;
- return h`<${Shell}>${body}<//>`};
+ return h`<${Shell} home=${m!='reset'}>${body}<//>`};
 const NoCfg=()=>h`<${Shell}><h1 class="au-t">${window.supabase?'Configuração pendente':'Sem conexão'}</h1>${window.supabase?h`<p class="au-s">O SODUAL ainda não sabe a qual projeto Supabase se conectar.</p><p class="au-fine">Crie o arquivo <code>config.js</code> a partir de <code>config.example.js</code> (ou defina SUPABASE_URL e SUPABASE_PUBLISHABLE_KEY na Vercel). Veja o README.</p>`:h`<p class="au-s">Não foi possível carregar o serviço de login. Verifique a internet e recarregue a página.</p><button class="b p au-btn" onClick=${()=>location.reload()}>Recarregar</button>`}<//>`;
 /* Oferta (opcional e explícita) de copiar as fichas de antes do login para a conta. O original continua no dispositivo. */
 const Legacy=({done})=>{const l=legacy();return h`<${Modal} t="Fichas encontradas neste dispositivo" onClose=${done}>
@@ -129,21 +135,42 @@ const Legacy=({done})=>{const l=legacy();return h`<${Modal} t="Fichas encontrada
  <p class="mut" style=${{fontSize:'.8rem'}}>Você pode fazer isso depois em Configurações.</p><//>`};
 let AUTH_DONE_RESET=()=>{};
 /* Portão: nada do aplicativo é montado antes de o Supabase confirmar a sessão. Mantém a interface sincronizada via onAuthStateChange. */
-const Gate=()=>{const[st,sst]=React.useState(SBC?{s:'load'}:{s:'cfg'}),cur=React.useRef(st),[leg,sleg]=React.useState(false),set=x=>{cur.current=x;sst(x)};
+/* Rotas públicas por hash: "#apresentacao" = landing page (para qualquer pessoa, sem encerrar sessão); "#entrar" = login/cadastro.
+   Sem hash: visitante novo vê a landing; quem saiu da conta, chegou por link de e-mail ou tem "última conta" neste navegador vai direto ao login. */
+const H_LAND='#apresentacao',H_AUTH='#entrar',setHash=(x,rep)=>{try{const u=location.pathname+location.search+x;rep?history.replaceState(null,'',u):history.pushState(null,'',u)}catch(e){location.hash=x}dispatchEvent(new Event('hashchange'))};
+const Gate=()=>{const[st,sst]=React.useState(SBC?{s:'load'}:{s:'cfg'}),cur=React.useRef(st),[leg,sleg]=React.useState(false),[hs,shs]=React.useState(location.hash),set=x=>{cur.current=x;sst(x)};
+ React.useEffect(()=>{const f=()=>shs(location.hash);addEventListener('hashchange',f);addEventListener('popstate',f);return()=>{removeEventListener('hashchange',f);removeEventListener('popstate',f)}},[]);
  React.useEffect(()=>{if(!SBC)return;let rec=ALINK.rec;
-  const enter=(u,extra)=>{if(!(cur.current.s=='in'&&AU.u&&AU.u.id==u.id))openAccount(u);else AU.u=u;sleg(canImport()&&!lsG(SKIP+u.id));set(Object.assign({s:'in',u},extra))},
-   out=note=>{closeAccount();set({s:'out',note})};
+  /* Entrada na conta: carrega o cache local (openAccount) e inicia a sincronização (src/sync.js).
+     Se o dispositivo não tem dados desta conta, mostra "Buscando…" até a nuvem responder (ou até SYNC_CFG.esperaInicial),
+     para não exibir uma ficha vazia nem permitir que o estado vazio seja tratado como dado do jogador.
+     Com dados locais, abre na hora (local-first) e concilia em segundo plano. */
+  const enter=(u,extra)=>{const nova=!((cur.current.s=='in'||cur.current.s=='sync')&&AU.u&&AU.u.id==u.id);
+   if(nova)openAccount(u);else AU.u=u;
+   if(location.hash==H_AUTH)setHash('',1);
+   const pronto=()=>{sleg(canImport()&&!lsG(SKIP+u.id));set(Object.assign({s:'in',u},extra))};
+   if(!nova||typeof syncIniciar!='function'){pronto();return}
+   const p=syncIniciar(u,{cliente:SBC}),fim=()=>{if(!AU.u||AU.u.id!=u.id)return;if(cur.current.s=='sync')pronto();else sleg(canImport()&&!lsG(SKIP+u.id))};
+   if(!temConteudo(S)){set({s:'sync',u});Promise.race([p,new Promise(r=>setTimeout(r,SYNC_CFG.esperaInicial))]).then(fim,fim)}
+   else{pronto();p.then(fim,fim)}},
+   /* auth: abrir direto o login (logout, mensagem de link ou última conta lembrada), em vez da landing.
+      A sincronização da sessão é encerrada ANTES de limpar a memória: respostas atrasadas são descartadas. */
+   out=(note,auth)=>{if(typeof syncEncerrar=='function')syncEncerrar();closeAccount();set({s:'out',note,auth:!!(auth||note||lastAcc())})};
   AUTH_DONE_RESET=()=>{rec=false;AU.u&&enter(AU.u)};
   const tm=setTimeout(()=>cur.current.s=='load'&&set({s:'load',err:'O servidor de login está demorando a responder.'}),12000);
   const{data:{subscription}}=SBC.auth.onAuthStateChange((ev,ses)=>{setTimeout(()=>{clearTimeout(tm);const u=ses&&ses.user;
    if(ev=='PASSWORD_RECOVERY'||(rec&&u&&ev!='SIGNED_OUT')){rec=true;if(cur.current.s=='in'){save()}AU.u=u;set({s:'reset'});return}
-   if(ev=='SIGNED_OUT'||!u){if(cur.current.s!='out'||ev=='SIGNED_OUT')out(ALINK.err&&cur.current.s=='load'?{t:LINKMSG(ALINK),bad:1}:null);return}
+   if(ev=='SIGNED_OUT'||!u){if(cur.current.s!='out'||ev=='SIGNED_OUT')out(ALINK.err&&cur.current.s=='load'?{t:LINKMSG(ALINK),bad:1}:null,ev=='SIGNED_OUT');return}
    if(ev=='INITIAL_SESSION'||ev=='SIGNED_IN'){enter(u);if(ALINK.conf&&ev=='INITIAL_SESSION'){ALINK.conf=false;toast('E-mail confirmado. Boas-vindas ao SODUAL!')}return}
-   if(ev=='USER_UPDATED'||ev=='TOKEN_REFRESHED'){AU.u=u;remember(u)}},0)});
+   if(ev=='USER_UPDATED'||ev=='TOKEN_REFRESHED'){AU.u=u;remember(u);if(typeof SY!='undefined'&&SY.estado=='auth')syncAgora()}},0)});
   return()=>{clearTimeout(tm);subscription.unsubscribe()}},[]);
+ /* Landing pública: visitante sem sessão (sem hash) ou qualquer pessoa em #apresentacao. Logado: "Voltar ao aplicativo" só limpa o hash. */
+ const land=hs==H_LAND||(st.s=='out'&&hs!=H_AUTH&&!st.auth);
+ if(land&&(st.s=='out'||st.s=='in'))return h`<${Landing} logado=${st.s=='in'} onEntrar=${()=>setHash(st.s=='in'?'':H_AUTH,st.s=='in')}/>`;
  if(st.s!='in')document.title=(st.s=='reset'?'Nova senha':'Entrar')+' — SODUAL';
  if(st.s=='cfg')return h`<${NoCfg}/>`;
  if(st.s=='load')return h`<${Load} err=${st.err} retry=${st.err&&(()=>location.reload())}/>`;
+ if(st.s=='sync')return h`<${Load} t="Buscando suas fichas na nuvem…"/>`;
  if(st.s=='out')return h`<${Auth} key="out" note=${st.note}/>`;
  if(st.s=='reset')return h`<${Auth} key="reset" start="reset"/>`;
  return h`<${React.Fragment}><${App} key=${st.u.id}/>${leg&&h`<${Legacy} done=${()=>sleg(false)}/>`}<//>`};

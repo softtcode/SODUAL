@@ -32,8 +32,24 @@ const PEND=['Reserva inicial de mana (livro + regra da mesa): rolagem dos dados 
 const VER=3,NARR=[['conceito','Conceito do personagem'],['aparencia','Aparência'],['objetivos','Objetivos'],['obs','Observações pessoais']];
 /* LS0 = dados do dispositivo anteriores ao login (nunca apagados nem alterados pela autenticação). LS = chave ativa; com sessão, cada conta usa LS0+'.u.'+id (ver src/auth.js). */
 const LS0='sodual.v1';let LS=LS0;const DEF=()=>({v:VER,chars:[],net:{pos:{},edges:[],people:[]},set:{col:0,theme:"auto",ac:"#7b4be8",nome:"Viajante",img:""}});
+/* ===== Perfil do jogador: cosméticos (sem efeito em regras). Guardado em S.set.perfil, no mesmo armazenamento local da conta.
+   arte: caminho da arte definitiva (ex.: 'assets/cosmeticos/molduras/dragao-violeta.png'). Vazio = ainda não fornecida → a interface
+   mostra uma prévia PROVISÓRIA identificada como tal. cor: só para a prévia provisória. */
+const PF_MOLD=[['dragao-violeta','Dragão Violeta','#8b5cf6',''],['runas-douradas','Runas Douradas','#f0c76a',''],['chamas-arcanas','Chamas Arcanas','#c23fb0',''],['lua-crepusculo','Lua do Crepúsculo','#9fb3ff',''],['floresta-encantada','Floresta Encantada','#3fb98a',''],['cristais-mana','Cristais de Mana','#5ee7ff','']].map(([id,nome,cor,arte])=>({id,nome,cor,arte}));
+/* Banners: "Céu Astral" é o banner estrelado já existente; "Dragão Violeta" usa a arte oficial do login. Os outros dois aguardam arte. */
+const PF_BAN=[['','Céu Astral','padrao'],['dragao-violeta','Dragão Violeta','dragao-login'],['floresta-encantada','Floresta Encantada',''],['ruinas-antigas','Ruínas Antigas','']].map(([id,nome,arte])=>({id,nome,arte}));
+const PF_TIT=['Explorador do Continente','Guardião das Runas','Cronista de Sodual','Veterano de Campanha','Desbravador'];
+/* Insígnias: "livre" = escolha cosmética do jogador; as demais dependem de uma regra de obtenção que ainda não existe e ficam bloqueadas. */
+const PF_INS=[['explorador','Explorador','compass','livre'],['mestre','Mestre de Campanha','book','livre'],['fundador','Fundador','star','futura'],['veterano','Veterano','shield','futura']].map(([id,nome,ic,tipo])=>({id,nome,ic,tipo}));
+const PF_BIO_MAX=160,PF_INS_MAX=3;
+/* Texto simples: remove marcação e caracteres de controle; a interface sempre exibe como texto (React escapa). */
+function textoSimples(s,max){return String(s==null?'':s).replace(/<[^>]*>/g,'').replace(/[\u0000-\u0008\u000B-\u001F\u007F]/g,'').slice(0,max)}
+/* Completa o perfil sem apagar nada: valores fora dos catálogos viram "nenhum"; insígnias futuras nunca ficam ativas. */
+function normPerfil(p){p=p&&typeof p=='object'?p:{};const ok=(v,l)=>l.some(x=>x.id==v)?v:'';
+ return{titulo:PF_TIT.includes(p.titulo)?p.titulo:'',bio:textoSimples(p.bio,PF_BIO_MAX),moldura:ok(p.moldura,PF_MOLD),banner:ok(p.banner,PF_BAN),
+  insignias:(Array.isArray(p.insignias)?p.insignias:[]).filter((v,i,a)=>a.indexOf(v)==i&&PF_INS.some(x=>x.id==v&&x.tipo=='livre')).slice(0,PF_INS_MAX)}}
 /* Normaliza/migra qualquer objeto de dados (carga inicial e restauração de backup). Nunca descarta dados do usuário sem necessidade. */
-function norm(o){const d=Object.assign(DEF(),o&&typeof o=='object'?o:{});d.chars=Array.isArray(d.chars)?d.chars:[];d.net=Object.assign({pos:{},edges:[],people:[]},d.net||{});d.net.pos=d.net.pos||{};d.net.edges=Array.isArray(d.net.edges)?d.net.edges:[];d.net.people=Array.isArray(d.net.people)?d.net.people:[];d.set=Object.assign(DEF().set,d.set||{});
+function norm(o){const d=Object.assign(DEF(),o&&typeof o=='object'?o:{});d.chars=Array.isArray(d.chars)?d.chars:[];d.net=Object.assign({pos:{},edges:[],people:[]},d.net||{});d.net.pos=d.net.pos||{};d.net.edges=Array.isArray(d.net.edges)?d.net.edges:[];d.net.people=Array.isArray(d.net.people)?d.net.people:[];d.set=Object.assign(DEF().set,d.set||{});d.set.perfil=normPerfil(d.set.perfil);
  if(d.chars.length>1){d.chars.slice(1).forEach(c=>{if(!d.net.people.some(p=>p.id==c.id))d.net.people.push({id:c.id,nome:c.nome,cor:c.cor||"#5ee7ff",img:c.img||""})});d.chars=d.chars.slice(0,1)}
  d.chars.forEach(c=>{c.hist=c.hist||{t:"",html:""};c.bag=c.bag||[];c.magias=c.magias||[];c.habs=c.habs||[];c.sk=c.sk||{};c.money=c.money||[0,0,0];
   /* Ferimentos: completa regiões e campos novos (cnt, cb) sem alterar grau, contador, amputação ou morte já gravados. */
@@ -47,16 +63,19 @@ function norm(o){const d=Object.assign(DEF(),o&&typeof o=='object'?o:{});d.chars
  ["folders","camp","bes","diario","arsenal"].forEach(k=>delete d[k]);d.v=VER;return d}
 let S=DEF();
 /* Carrega (e migra, se for de versão anterior) os dados guardados na chave k e passa a salvar nela. Retorna false se a chave não existia. */
-function loadS(k){LS=k;let RAW=null;S=DEF();try{RAW=localStorage.getItem(LS);if(RAW){const p=JSON.parse(RAW);const old=(p.v||1)<VER;if(old)try{localStorage.setItem(LS+'.bak',RAW)}catch(e){}S=norm(p);if(old)try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}}catch(e){try{localStorage.setItem(LS+'.corrupt',RAW||'')}catch(_){}S=DEF()}return RAW!=null}
+function loadS(k){LS=k;let RAW=null;S=norm(DEF());try{RAW=localStorage.getItem(LS);if(RAW){const p=JSON.parse(RAW);const old=(p.v||1)<VER;if(old)try{localStorage.setItem(LS+'.bak',RAW)}catch(e){}S=norm(p);if(old)try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}}catch(e){try{localStorage.setItem(LS+'.corrupt',RAW||'')}catch(_){}S=DEF()}return RAW!=null}
 loadS(LS0);
 /* Migração: ficha única + pessoas da rede independentes */
 
 const UI0=()=>({net:{sel:null,edge:null,link:true,k:1,x:0,y:0,dying:null,newId:null},view:"lore",id:null,tab:'ficha',reg:'cabeca',w:null,step:0,pdf:'',rl:{a:'des',s:'Luta',m:0,reg:'',def:0}});
 let ui=UI0();
 /* Sem conta aberta (LS vazio) nada é gravado: evita escrever dados de uma conta na chave de outra. */
-function save(){if(!LS)return true;try{localStorage.setItem(LS,JSON.stringify(S));(document.getElementById("st")||{}).textContent='✔ salvo '+new Date().toLocaleTimeString().slice(0,5);return true}catch(e){toast('Armazenamento do navegador cheio. Exporte um backup e remova imagens grandes.');return false}}
+/* Grava na hora no localStorage (síncrono, como sempre) e só então avisa a sincronização (src/sync.js), que envia em segundo plano. */
+function save(){if(!LS)return true;try{localStorage.setItem(LS,JSON.stringify(S));(document.getElementById("st")||{}).textContent='✔ salvo '+new Date().toLocaleTimeString().slice(0,5)}catch(e){toast('Armazenamento do navegador cheio. Exporte um backup e remova imagens grandes.');return false}
+ if(typeof syncMarcar=='function')try{syncMarcar()}catch(e){}return true}
 const usage=()=>{let n=0;try{n=new Blob([localStorage.getItem(LS)||'']).size}catch(e){}return n}
-function toast(t){const e=$('#toast');e.textContent=t;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',2500)}
+/* Aviso breve. tp opcional: 'ok' (sucesso), 'warn' (atenção), 'err' (erro), 'crit' (ferimento crítico). Cor + ícone + texto, nunca só animação. */
+function toast(t,tp){const e=$('#toast');if(!e)return;e.textContent=t;e.className=tp?'t-'+tp:'';e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',tp=='crit'||tp=='err'?4000:2600)}
 const cur=()=>S.chars.find(c=>c.id==ui.id);
 /* ===== Lógica de regras ===== */
 function roll(a,skill,mod){const sk=(cur()?.sk||{})[skill]||0,n=+a;let d=[];const c=Math.max(n,2);for(let i=0;i<(n>0?n:2);i++)d.push(rnd(20));const k=n>0?Math.max(...d):Math.min(...d);return{d,k,sk,mod:+mod,t:k+sk+ +mod,n}}

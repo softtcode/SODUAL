@@ -239,7 +239,9 @@ test('17. dados e backups anteriores (v1/v2) são migrados sem perda', () => {
   assert.equal(c.bag[0].nome, 'Faca'); assert.equal(c.magias[0].nome, 'Luz'); assert.equal(c.habs.length, 1);
   eq(c.money, [5, 2, 1]); assert.equal(c.cin, 'Cinete X'); eq(c.sk, { Natureza: 3 });
   eq(c.narr, { conceito: '', aparencia: '', objetivos: '', obs: '' });
-  eq(S.net, v2.net); eq(S.set, v2.set);
+  eq(S.net, v2.net);
+  const { perfil, ...setAntigo } = S.set;                 // perfil cosmético é acrescentado; o restante fica igual
+  eq(setAntigo, v2.set); eq(perfil, { titulo: '', bio: '', moldura: '', banner: '', insignias: [] });
   assert.equal(S.v, 3);
   assert.equal(env.mem['sodual.v1.bak'], raw);  // cópia da versão anterior guardada antes de migrar
   // narr pré-existente (inclusive chaves desconhecidas) é preservado

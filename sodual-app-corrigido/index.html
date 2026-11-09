@@ -1,4 +1,6 @@
 <!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"><meta name="theme-color" content="#0b1030"><script>try{var s=JSON.parse(localStorage.getItem("sodual.tema")||"null")||((JSON.parse(localStorage.getItem("sodual.v1"))||{}).set)||{},t=s.theme||"auto";document.documentElement.dataset.theme=t=="auto"?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):t;s.ac&&document.documentElement.style.setProperty("--ac",s.ac)}catch(e){}</script><title>SODUAL — História do RPG</title>
+<!-- Favicon (cabeça de dragão roxo em pixel art, fundo transparente; .ico com 16 a 256 px). "?v=" força a troca no cache do navegador: aumente ao substituir o arquivo. -->
+<link rel="icon" href="favicon.ico?v=3" sizes="any">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Noto+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
@@ -8,15 +10,18 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
 <!-- Configuração pública do Supabase (Project URL + publishable key). Gerado a partir de config.example.js; ver README. -->
 <script src="config.js"></script>
-</head><body><div id="root"></div><div id="toast"></div>
+</head><body><div id="root"></div><div id="toast" role="status" aria-live="polite"></div>
 <script src="src/rules.js"></script>
 <script src="src/creation.js"></script>
 <script src="src/ui.js"></script>
 <script src="src/lore.js"></script>
 <script src="src/personagem.js"></script>
 <script src="src/imagem.js"></script>
+<script src="src/perfil.js"></script>
 <script src="src/network.js"></script>
 <script src="src/pages.js"></script>
+<script src="src/landing.js"></script>
+<script src="src/sync.js"></script>
 <script src="src/auth.js"></script>
 <script src="src/app.js"></script>
 </body></html>
