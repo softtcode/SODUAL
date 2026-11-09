@@ -26,7 +26,17 @@ grant execute on function auth.uid() to anon, authenticated;
 -- Privilégios padrão do Supabase em objetos novos do schema public (a migração precisa revogá-los).
 alter default privileges in schema public grant all on tables to anon, authenticated;
 alter default privileges in schema public grant all on functions to anon, authenticated;
+-- Storage (Entrega 5): só as colunas usadas pelas políticas; no Supabase, storage.objects já vem com RLS ligado e
+-- privilégios de tabela para anon/authenticated (quem decide o acesso são as políticas).
+create schema storage;
+create table storage.buckets (id text primary key, name text not null, public boolean default false, file_size_limit bigint, allowed_mime_types text[]);
+create table storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text references storage.buckets(id), name text, owner uuid, metadata jsonb, created_at timestamptz default now(), unique (bucket_id, name));
+alter table storage.objects enable row level security;
+grant usage on schema storage to anon, authenticated;
+grant all on storage.objects to anon, authenticated; grant select on storage.buckets to anon, authenticated;
 `;
+const MIG2 = fs.readFileSync(path.join(raiz, 'supabase/migrations/002_images_storage.sql'), 'utf8');
+const TST2 = fs.readFileSync(path.join(raiz, 'supabase/tests/002_images_storage_test.sql'), 'utf8');
 
 async function novo() { const db = new PGlite(); await db.exec(STUB); return db; }
 async function rodar(nome, fn) { try { await fn(); console.log('✔', nome); return true; } catch (e) { console.log('✖', nome, '\n   ', e.message); return false; } }
@@ -79,5 +89,35 @@ ok &= await rodar('duas escritas com a mesma revisão: uma vence, a outra recebe
   const linha = (await db.query('select data, revision, updated_by_device from public.sodual_user_data')).rows[0];
   if (linha.data.set.nome !== 'computador' || linha.revision != 2) throw new Error('o perdedor sobrescreveu: ' + JSON.stringify(linha));
 });
+
+// 5) Storage (migração 002): verificação completa, idempotência e sabotagens.
+ok &= await rodar('002: bucket privado e políticas de imagens passaram', async () => {
+  const db = await novo(); const avisos = [];
+  await db.exec(MIG); await db.exec(MIG2); await db.exec(TST2, { onNotice: n => avisos.push(n.message) });
+  if (!avisos.some(a => /TODAS AS VERIFICAÇÕES DO STORAGE PASSARAM/.test(a))) throw new Error('mensagem de sucesso ausente: ' + avisos.join(' | '));
+  const n = (await db.query('select count(*)::int as n from storage.objects')).rows[0].n;
+  if (n !== 0) throw new Error('rollback não limpou storage.objects');
+});
+ok &= await rodar('002: migração pode ser executada duas vezes e corrige bucket público', async () => {
+  const db = await novo();
+  await db.exec(`insert into storage.buckets (id, name, public) values ('sodual-images','sodual-images',true);`);
+  await db.exec(MIG2); await db.exec(MIG2); await db.exec(TST2);
+  const b = (await db.query(`select public, file_size_limit from storage.buckets where id='sodual-images'`)).rows[0];
+  if (b.public !== false || +b.file_size_limit !== 1048576) throw new Error(JSON.stringify(b));
+});
+const sabot2 = [
+  ['bucket público', `update storage.buckets set public = true where id = 'sodual-images';`],
+  ['leitura sem checar a pasta', `drop policy "sodual_images_select_own" on storage.objects; create policy "sodual_images_select_own" on storage.objects for select to authenticated using (bucket_id = 'sodual-images');`],
+  ['escrita em qualquer pasta', `create or replace function public.sodual_image_path_ok(p_name text) returns boolean language sql stable set search_path = '' as $$ select auth.uid() is not null $$;`],
+  ['política extra liberando anon', `create policy "sodual_images_anon" on storage.objects for select to anon using (bucket_id = 'sodual-images');`],
+  ['anon executa a função de caminho', `grant execute on function public.sodual_image_path_ok(text) to anon;`],
+];
+for (const [nome, sql] of sabot2) {
+  ok &= await rodar('002: o teste detecta sabotagem: ' + nome, async () => {
+    const db = await novo(); await db.exec(MIG2); await db.exec(sql);
+    let falhou = false; try { await db.exec(TST2); } catch (e) { falhou = /FALHOU/.test(e.message); if (!falhou) throw e; }
+    if (!falhou) throw new Error('o script de teste NÃO percebeu a sabotagem');
+  });
+}
 
 console.log(ok ? '\nRESULTADO: tudo passou' : '\nRESULTADO: há falhas'); process.exit(ok ? 0 : 1);

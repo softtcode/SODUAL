@@ -1471,7 +1471,7 @@ const Cards=({k,sc,t,ic,cls,em})=>{const c=me();c[k]=c[k]||[];const[m,sm]=React.
  ${m&&h`<${CardForm} it=${m} sc=${sc} onOk=${ok} onClose=${()=>sm(null)}/>`}`};
 </script>
 <script>/* ===== Enquadramento de imagens (avatar do perfil e retrato do personagem) =====
-   Armazenamento (mesmo do resto do app: localStorage da conta, sem Supabase Storage):
+   Armazenamento local (localStorage da conta; com a nuvem ativa, uma cópia vai para o Storage privado — ver src/imagens-nuvem.js):
    - img      recorte final já pronto (JPEG em data URL) — é o que todas as telas exibem, como antes;
    - imgSrc   cópia reduzida da imagem original (lado maior ≤ IMG_SRC_LADO), para reabrir o editor sem perder o resto da foto;
    - imgCrop  {x,y,z}: centro do recorte em coordenadas normalizadas da original (0..1) e zoom (1 = preenche o quadro).
@@ -1503,11 +1503,12 @@ function gerarRecorte(el,st,cfg){const iw=el.naturalWidth,ih=el.naturalHeight,r=
  return jpegAte((x,w,h)=>x.drawImage(el,r.sx,r.sy,r.sw,r.sh,0,0,w,h),W,H,IMG_OUT_LIM)}
 function gerarFonte(el){const iw=el.naturalWidth,ih=el.naturalHeight,k=Math.min(1,IMG_SRC_LADO/Math.max(iw,ih));return jpegAte((x,w,h)=>x.drawImage(el,0,0,w,h),iw*k,ih*k,IMG_SRC_LIM)}
 /* Grava o resultado no objeto (S.set ou ficha). Só aqui a imagem anterior é substituída. Sem espaço, guarda só o recorte; se nem isso couber, restaura tudo. */
-function aplicarImagem(o,r){const ant={img:o.img,imgSrc:o.imgSrc,imgCrop:o.imgCrop};Object.assign(o,{img:r.img,imgSrc:r.src||'',imgCrop:r.src?r.crop:null});
+/* As referências da nuvem (imgRef/imgSrcRef, Entrega 5) apontam para a imagem ANTERIOR: saem junto; a nova é enviada em segundo plano. */
+function aplicarImagem(o,r){const ant={img:o.img,imgSrc:o.imgSrc,imgCrop:o.imgCrop,imgRef:o.imgRef,imgSrcRef:o.imgSrcRef};delete o.imgRef;delete o.imgSrcRef;Object.assign(o,{img:r.img,imgSrc:r.src||'',imgCrop:r.src?r.crop:null});
  if(save()){R();return true}
  o.imgSrc='';o.imgCrop=null;if(save()){R();toast('Enquadramento salvo. Sem espaço para guardar a original: um novo ajuste partirá do recorte.');return 'parcial'}
  Object.assign(o,ant);save();R();return false}
-const limparImagem=o=>{o.img='';o.imgSrc='';o.imgCrop=null};
+const limparImagem=o=>{o.img='';o.imgSrc='';o.imgCrop=null;delete o.imgRef;delete o.imgSrcRef};
 
 /* Editor: arrastar (mouse/toque), pinça para zoom, roda do mouse, controle deslizante e teclado (setas, + e −). */
 const Cropper=({src,ini,fonte,cfg,titulo,onSave,onCancel,onTrocar})=>{const[im,sim]=React.useState(null),[st,sst]=React.useState(ini||{x:.5,y:.5,z:1}),[busy,sb]=React.useState(false),
@@ -1679,11 +1680,15 @@ const Aparencia=()=>{const u=S.set,nome=(Object.entries(AC).find(([,v])=>v==u.ac
   <div class="ap-pv" aria-live="polite"><span class="ap-dot" style=${{background:u.ac}}></span><span>Selecionada: <b>${nome}</b></span><span class="b p ap-btn" aria-hidden="true">Prévia</span><span class="ap-ch" aria-hidden="true">Aba ativa</span></div></div></section>`};
 /* Cópias guardadas pela sincronização (src/sync.js): exportar ou restaurar, sempre com confirmação. Restaurar = vira o estado
    deste dispositivo e segue a sincronização normal (com controle de revisão: se a nuvem tiver mudado, vira conflito). */
+/* Backup PORTÁTIL (Entrega 5): imagens sempre em base64 dentro do arquivo, nunca só caminhos privados do Storage. */
+async function exportarPortatil(nome,meta,dados){let r={dados,faltando:0};if(typeof imgExportavel=='function')try{r=await imgExportavel(dados)}catch(e){}
+ baixarJSON(nome,{_meta:Object.assign({app:'SODUAL',formato:2},meta),...r.dados});
+ toast(r.faltando?`Backup exportado, mas ${r.faltando} imagem(ns) não puderam ser baixadas da nuvem agora (sem conexão?) e ficaram de fora.`:'Backup exportado',r.faltando?'warn':'ok')}
 const COPIAS=[['.antes-nuvem','Versão deste dispositivo antes de receber a da nuvem'],['.nuvem-substituida','Versão da nuvem antes de ser substituída'],['.nuvem-excluida','Versão da nuvem quando foi excluída']];
 const CopiasSync=()=>{const[cf,scf]=React.useState(null),[,t]=React.useReducer(x=>x+1,0),l=COPIAS.map(([k,nm])=>[k,nm,syncLerCopia(k)]).filter(x=>x[2]);if(!l.length)return null;
- const restaurar=c=>{try{localStorage.setItem(LS+'.prev',JSON.stringify(S))}catch(e){}S=norm(JSON.parse(JSON.stringify(c.dados)));ui.id=null;if(!save()){toast('Restauração falhou: armazenamento cheio.','err');return}applySet();scf(null);go('config');toast('Cópia restaurada neste dispositivo','ok')};
+ const restaurar=c=>{try{localStorage.setItem(LS+'.prev',JSON.stringify(S))}catch(e){}const velho=S;S=norm(JSON.parse(JSON.stringify(c.dados)));if(typeof imgHerdar=='function')imgHerdar(S,velho);ui.id=null;if(!save()){toast('Restauração falhou: armazenamento cheio.','err');return}applySet();scf(null);go('config');toast('Cópia restaurada neste dispositivo','ok')};
  return h`<div class="cfg-cp"><b>Cópias guardadas neste navegador</b>${l.map(([k,nm,c])=>{const r=syncResumo(c.dados);return h`<div class="cfg-r" key=${k}><div><b>${nm}</b><small>${dataHora(c.salvo)} · ${r.nome||'sem personagem'} · ${r.pessoas} pessoa(s) na rede</small></div><div class="row">
-  <${B} ic="down" onClick=${()=>baixarJSON('sodual'+k.replace('.','-')+'-'+String(c.salvo).slice(0,10)+'.json',{_meta:{app:'SODUAL',formato:2,origem:nm,salvo:c.salvo},...c.dados})}>Exportar<//><${B} ic="restore" onClick=${()=>scf([k,nm,c])}>Restaurar<//><${B} ic="trash" class="b dng" onClick=${()=>{if(confirm('Apagar esta cópia guardada? Exporte antes se quiser mantê-la.')){localStorage.removeItem(LS+k);t()}}}>Apagar cópia<//></div></div>`})}
+  <${B} ic="down" onClick=${()=>exportarPortatil('sodual'+k.replace('.','-')+'-'+String(c.salvo).slice(0,10)+'.json',{origem:nm,salvo:c.salvo},c.dados)}>Exportar<//><${B} ic="restore" onClick=${()=>scf([k,nm,c])}>Restaurar<//><${B} ic="trash" class="b dng" onClick=${()=>{if(confirm('Apagar esta cópia guardada? Exporte antes se quiser mantê-la.')){localStorage.removeItem(LS+k);t()}}}>Apagar cópia<//></div></div>`})}
  ${cf&&h`<${Modal} t="Restaurar esta cópia?" onClose=${()=>scf(null)}><p><b>${cf[1]}</b>, guardada em ${dataHora(cf[2].salvo)}.</p><div class="note">Os dados atuais deste dispositivo serão substituídos (ficam em “Desfazer última restauração”). Depois, a sincronização segue normalmente: se a nuvem tiver mudado, você escolhe a versão; se este dispositivo estiver em “só neste dispositivo”, nada é enviado sem você pedir.</div><div class="row"><${B} p ic="check" onClick=${()=>restaurar(cf[2])}>Restaurar<//><${B} onClick=${()=>scf(null)}>Cancelar<//></div><//>`}</div>`};
 /* Exclusão dos dados da NUVEM (não da conta, nem deste dispositivo). Confirmação digitada. */
 const ExcluirNuvem=({exp})=>{const s=useSync(),[ab,sab]=React.useState(false),[txt,stx]=React.useState(''),[busy,sb]=React.useState(false),[er,se]=React.useState('');
@@ -1693,6 +1698,11 @@ const ExcluirNuvem=({exp})=>{const s=useSync(),[ab,sab]=React.useState(false),[t
  ${ab&&h`<${Modal} t="Excluir dados da nuvem?" onClose=${()=>!busy&&sab(false)}><p>A cópia desta conta na nuvem será apagada. <b>Este dispositivo continua com os dados</b> e não os reenvia sozinho.</p><div class="note bad">Outros dispositivos que ainda não tenham os dados não poderão recuperá-los da nuvem. Exporte um backup antes.</div>
   <label class="fld">Digite EXCLUIR para confirmar<input type="text" autoComplete="off" value=${txt} onChange=${e=>stx(e.target.value)} onInput=${e=>stx(e.target.value)}/></label>${er&&h`<div class="er" role="alert">${er}</div>`}
   <div class="row"><${B} ic="down" onClick=${exp}>Exportar backup antes<//><${B} p ic="trash" disabled=${busy||txt.trim().toUpperCase()!='EXCLUIR'} onClick=${ir}>${busy?'Excluindo…':'Excluir da nuvem'}<//><${B} disabled=${busy} onClick=${()=>sab(false)}>Cancelar<//></div><//>`}`};
+/* Imagens no Storage privado (Entrega 5): pendências de envio/recebimento e "Tentar novamente". Re-renderiza com useSync. */
+const ImgSync=()=>{useSync();if(typeof imgnStatus!='function')return null;const m=imgnStatus();if(!m.ativo)return null;
+ const txt=m.rodando?'Sincronizando imagens…':m.enviar||m.baixar?[m.enviar&&m.enviar+' aguardando envio',m.baixar&&m.baixar+' para baixar'].filter(Boolean).join(' · ')+(m.erro?' — '+m.erro:'.'):'Todas as imagens estão na nuvem (armazenamento privado).';
+ return h`<div class="cfg-r"><div><b>Imagens</b><small class=${m.erro?'sy-t sy-warn':''}>${txt}${m.ignoradas&&!m.rodando?h`<br/>${m.ignoradas} imagem(ns) ficaram só neste dispositivo (formato ou tamanho não aceitos, ou arquivo ausente na nuvem).`:''}</small></div>
+  ${(m.enviar||m.baixar)&&!m.rodando?h`<${B} ic="sincro" onClick=${()=>imgnAgora()}>Tentar novamente<//>`:null}</div>`};
 /* Configurações › Sincronização (Entrega 2: estado, última sincronia confirmada, pendências, ações básicas). */
 const dataHora=t=>{try{return t?new Date(t).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'—'}catch(e){return'—'}};
 const SyncSec=({exp})=>{const s=useSync();if(!AU.u)return null;const u=SYNC_UI[s.estado]||['Desligada','nuvemOff','loc'],cf=s.conflito;
@@ -1701,6 +1711,7 @@ const SyncSec=({exp})=>{const s=useSync();if(!AU.u)return null;const u=SYNC_UI[s
   <${B} ic="sincro" disabled=${!['salvo','pendente','offline','auth','erro'].includes(s.estado)} onClick=${()=>syncAgora()}>Sincronizar agora<//></div>
  <div class="cfg-r"><div><b>Última sincronização confirmada</b><small>${dataHora(s.at)}${s.rev?' · revisão '+s.rev:''}</small></div></div>
  <div class="cfg-r"><div><b>Alterações pendentes</b><small>${s.pendente?'Sim — salvas neste dispositivo, aguardando envio.':'Nenhuma.'}</small></div></div>
+ <${ImgSync}/>
  ${(s.estado=='migrar'||s.estado=='adiado')&&h`<div class="note">A nuvem desta conta está vazia e este dispositivo tem dados. Nada é enviado sem a sua confirmação.<div class="row"><${B} p ic="nuvem" onClick=${()=>syncMigrar()}>Enviar para a nuvem<//><${B} ic="down" onClick=${exp}>Exportar backup antes<//></div></div>`}
  ${s.estado=='conflito'&&h`<div class="note bad"><b>${cf&&cf.tipo=='remoto-apagado'?'Os dados desta conta foram removidos da nuvem por outro dispositivo.':'A nuvem tem uma versão diferente da deste dispositivo.'}</b>
   ${cf&&cf.remoto?h`<br/><small>Nuvem: revisão ${cf.remoto.revision}, alterada em ${dataHora(cf.remoto.updated_at)}${cf.remoto.updated_by_device?' por '+cf.remoto.updated_by_device:''}.</small>`:''}
@@ -1709,7 +1720,7 @@ const SyncSec=({exp})=>{const s=useSync();if(!AU.u)return null;const u=SYNC_UI[s
  <p class="mut cfg-fine">As fichas são salvas automaticamente neste dispositivo e enviadas para a nuvem da sua conta, de onde podem ser abertas em outros dispositivos. Sem internet, as alterações ficam aqui e são enviadas quando a conexão voltar. Se dois dispositivos mudarem os mesmos dados, nada é sobrescrito sem a sua escolha.</p></section>`};
 const Sw=({on,fn,l})=>h`<button role="switch" aria-checked=${on} class=${'swt'+(on?' on':'')} onClick=${fn}><i></i><span>${l}</span></button>`;
 const Config=()=>{const[pend,sp]=React.useState(null),[wipe,sw]=React.useState(false),[,fr]=React.useState(0),u=usage(),Q=5*1048576,pc=Math.min(100,u/Q*100),prev=(()=>{try{return localStorage.getItem(LS+'.prev')}catch(e){return null}})();
- const exp=()=>{const l=document.createElement('a');l.href=URL.createObjectURL(new Blob([JSON.stringify({_meta:{app:'SODUAL',formato:2,exportado:new Date().toISOString()},...S},null,1)],{type:'application/json'}));l.download='sodual-backup-'+new Date().toISOString().slice(0,10)+'.json';l.click();toast('Backup exportado')},
+ const exp=()=>exportarPortatil('sodual-backup-'+new Date().toISOString().slice(0,10)+'.json',{exportado:new Date().toISOString()},S),
  read=e=>{const f=e.target.files[0];e.target.value='';if(!f)return;if(f.size>60*1048576){toast('Arquivo grande demais para ser um backup do SODUAL.');return}f.text().then(t=>{try{const d=JSON.parse(t);if(!d||typeof d!='object'||!(Array.isArray(d.chars)||d.net))throw 0;sp(norm(d))}catch(er){toast('Arquivo inválido: não é um backup do SODUAL.')}})},
  apply=(n)=>{try{localStorage.setItem(LS+'.prev',JSON.stringify(S))}catch(e){}delete n._meta;S=n;ui.id=null;ui.net.sel=null;ui.net.edge=null;if(!save()){toast('Restauração falhou: armazenamento cheio.');return}applySet();sp(null);go('config');toast('Backup restaurado'+(me()?' — '+me().nome:''))},
  undo=()=>{try{apply(norm(JSON.parse(prev)))}catch(e){toast('Cópia anterior indisponível.')}};
@@ -1728,7 +1739,7 @@ const Config=()=>{const[pend,sp]=React.useState(null),[wipe,sw]=React.useState(f
  ${wipe&&(()=>{const st=typeof syncStatus=='function'?syncStatus():{},pend=st.pendente||!['salvo'].includes(st.estado);return h`<${Modal} t="Limpar este dispositivo?" onClose=${()=>sw(false)}><p>Isso apaga a cópia local do SODUAL desta conta neste navegador. A conta continua existindo, e a cópia na nuvem não é tocada.</p>
  ${pend?h`<div class="note bad"><b>Atenção:</b> há dados deste dispositivo que <b>não estão confirmados na nuvem</b> (${(SYNC_UI[st.estado]||['sincronização desligada'])[0].toLowerCase()}). Se limpar agora, eles se perdem. Exporte um backup antes.</div>`:h`<div class="note">Tudo está salvo na nuvem: os dados voltarão no próximo acesso.</div>`}
  <div class="row"><${B} ic="down" onClick=${exp}>Exportar antes<//><${B} p ic="trash" onClick=${()=>{if(typeof syncEncerrar=='function')syncEncerrar();['','.bak','.prev','.corrupt','.sync','.antes-nuvem','.nuvem-substituida','.nuvem-excluida'].forEach(k=>localStorage.removeItem(LS+k));location.reload()}}>Limpar este dispositivo<//><${B} onClick=${()=>sw(false)}>Cancelar<//></div><//>`})()}</div>`};
-const HELP=[["Conta e acesso","Você entra com e-mail e senha (Supabase Auth). A sessão continua aberta neste navegador até você sair. Esqueceu a senha? Na tela de login, use “Esqueci minha senha”: enviamos um link para criar outra. “Sair da conta” encerra a sessão só neste navegador; “Esquecer conta” apenas remove a sugestão de acesso rápido."],["Onde ficam suas fichas","Tudo é salvo na hora neste dispositivo e enviado automaticamente para a nuvem da sua conta. Em outro aparelho, entre com a mesma conta para recuperar as fichas. Sem internet, as alterações ficam aqui e sobem quando a conexão voltar. O indicador de sincronização mostra se está “Salvo na nuvem”, “Salvando…” ou “Salvo neste dispositivo”. Se dois aparelhos mudarem os mesmos dados, nada é sobrescrito sem a sua escolha. Na primeira vez, o app pergunta antes de enviar as fichas que já estavam neste dispositivo."],["Conflitos, cópias e exclusão","Se você editar em dois aparelhos sem que um veja a mudança do outro (por exemplo, um deles sem internet), o app mostra “Escolha qual versão manter”, com as duas versões lado a lado. Você pode exportar as duas e escolher qual fica; a outra é guardada neste navegador (Configurações › Sincronização › Cópias guardadas). Edições feitas uma depois da outra não geram conflito: o aparelho traz a versão nova sozinho. “Limpar este dispositivo” apaga só a cópia local, e os dados voltam da nuvem. “Excluir dados da nuvem” apaga só a cópia na nuvem e exige digitar EXCLUIR. Nenhuma das duas exclui a sua conta."],["Criar personagem","São 7 etapas guiadas. Antes de salvar, a ficha inteira é conferida (atributos, perícias, habilidade e origem conforme o livro); a revisão aponta o que falta e leva direto à etapa. A reserva inicial de mana é rolada (dados raciais + Corpo, até 3 tentativas). Existe uma ficha principal por conta."],["Ferimentos e combate","No Modo de Combate, toque numa região da silhueta, escolha o grau e registre. O aplicativo aplica a progressão, os acumulados, as penalidades, o estado Fatal, o teste de desmembramento e a morte imediata conforme as regras. As correções manuais ficam recolhidas, separadas do registro. O livro não usa pontos de vida."],["Mochila, magias e habilidades","São abas do personagem, salvas automaticamente. A mochila pode ser filtrada por categoria; as habilidades raciais aparecem separadas das demais."],["Rede de Conexões","Adicione pessoas sem criar fichas. Clique numa estrela e depois em outra para ligá-las; clique na linha para editar tipo, cor e descrição. “Visão geral” volta a mostrar toda a constelação."],["Perfil e configurações","Em Meu Perfil você escolhe moldura, banner, título, biografia e insígnias (cosméticos, sem efeito nas regras). Tema e cor de destaque ficam em Configurações › Aparência."],["Teclado","Use Tab para navegar, Enter ou Espaço para ativar e Esc para fechar janelas. As regiões da silhueta são focáveis e selecionáveis pelo teclado."]];
+const HELP=[["Conta e acesso","Você entra com e-mail e senha (Supabase Auth). A sessão continua aberta neste navegador até você sair. Esqueceu a senha? Na tela de login, use “Esqueci minha senha”: enviamos um link para criar outra. “Sair da conta” encerra a sessão só neste navegador; “Esquecer conta” apenas remove a sugestão de acesso rápido."],["Onde ficam suas fichas","Tudo é salvo na hora neste dispositivo e enviado automaticamente para a nuvem da sua conta. Em outro aparelho, entre com a mesma conta para recuperar as fichas. Sem internet, as alterações ficam aqui e sobem quando a conexão voltar. O indicador de sincronização mostra se está “Salvo na nuvem”, “Salvando…” ou “Salvo neste dispositivo”. Se dois aparelhos mudarem os mesmos dados, nada é sobrescrito sem a sua escolha. Na primeira vez, o app pergunta antes de enviar as fichas que já estavam neste dispositivo. As fotos (perfil, retrato e rede) vão para um armazenamento privado da sua conta, que só você acessa; uma cópia continua neste aparelho para funcionar sem internet. O backup exportado inclui as imagens."],["Conflitos, cópias e exclusão","Se você editar em dois aparelhos sem que um veja a mudança do outro (por exemplo, um deles sem internet), o app mostra “Escolha qual versão manter”, com as duas versões lado a lado. Você pode exportar as duas e escolher qual fica; a outra é guardada neste navegador (Configurações › Sincronização › Cópias guardadas). Edições feitas uma depois da outra não geram conflito: o aparelho traz a versão nova sozinho. “Limpar este dispositivo” apaga só a cópia local, e os dados voltam da nuvem. “Excluir dados da nuvem” apaga só a cópia na nuvem e exige digitar EXCLUIR. Nenhuma das duas exclui a sua conta."],["Criar personagem","São 7 etapas guiadas. Antes de salvar, a ficha inteira é conferida (atributos, perícias, habilidade e origem conforme o livro); a revisão aponta o que falta e leva direto à etapa. A reserva inicial de mana é rolada (dados raciais + Corpo, até 3 tentativas). Existe uma ficha principal por conta."],["Ferimentos e combate","No Modo de Combate, toque numa região da silhueta, escolha o grau e registre. O aplicativo aplica a progressão, os acumulados, as penalidades, o estado Fatal, o teste de desmembramento e a morte imediata conforme as regras. As correções manuais ficam recolhidas, separadas do registro. O livro não usa pontos de vida."],["Mochila, magias e habilidades","São abas do personagem, salvas automaticamente. A mochila pode ser filtrada por categoria; as habilidades raciais aparecem separadas das demais."],["Rede de Conexões","Adicione pessoas sem criar fichas. Clique numa estrela e depois em outra para ligá-las; clique na linha para editar tipo, cor e descrição. “Visão geral” volta a mostrar toda a constelação."],["Perfil e configurações","Em Meu Perfil você escolhe moldura, banner, título, biografia e insígnias (cosméticos, sem efeito nas regras). Tema e cor de destaque ficam em Configurações › Aparência."],["Teclado","Use Tab para navegar, Enter ou Espaço para ativar e Esc para fechar janelas. As regiões da silhueta são focáveis e selecionáveis pelo teclado."]];
 const Help=()=>h`<div class="hp"><h1>Ajuda</h1><p class="mut">Guia rápido do SODUAL. As regras do jogo estão no Livro de regras e na Biblioteca.</p><p><a class="b" href="#apresentacao"><${I} n="compass" s=${16}/>Ver a página de apresentação</a></p><div class="hp-c">${HELP.map(([t,d],i)=>h`<section key=${t}><span class="hp-n">${String(i+1).padStart(2,'0')}</span><h2>${t}</h2><p>${d}</p></section>`)}</div></div>`;
 const Book=()=>{const inc=!window.SINGLE;return h`<h1>Livro de Regras</h1><div class="lay" style=${{gridTemplateColumns:'1fr 320px'}}><div>${ui.pdf?h`<iframe class="pdf" src=${ui.pdf} style=${{width:'100%',height:'calc(100vh - 150px)',minHeight:420,border:'1px solid var(--line)',borderRadius:8}} title="Livro de regras"></iframe><p class="mob-only mut pdf-n">No celular, alguns navegadores não exibem PDF dentro da página. Se o livro aparecer em branco ou só na primeira página, use “Abrir em nova aba”.</p>`:h`<${Empty} ic="book" t="O grimório permanece fechado" d=${inc?'Abra o livro incluído para consultá-lo aqui, com zoom e navegação do visualizador de PDF.':'Abra o arquivo PDF do Livro I para consultá-lo aqui, com zoom e navegação do visualizador. O arquivo fica apenas no seu navegador.'}/>`}<div class="row">${inc&&h`<${B} p ic="book" onClick=${()=>{ui.pdf='assets/livro.pdf';R()}}>Abrir livro incluído<//>`}<label class=${'b'+(inc?'':' p')}><${I} n="up" s=${16}/>Abrir outro PDF<input type="file" accept="application/pdf" hidden onChange=${e=>{const f=e.target.files[0];if(f){ui.pdf=URL.createObjectURL(f);R()}}}/></label>${ui.pdf&&h`<a class="b mob-only" href=${ui.pdf} target="_blank" rel="noopener"><${I} n="ext" s=${16}/>Abrir em nova aba<//>`}${ui.pdf&&h`<a class="b" href=${ui.pdf} download="Sodual_Livro_I.pdf"><${I} n="down" s=${16}/>Baixar<//>`}</div></div>
  <aside class="side"><h2>Pontos em aberto</h2>${PEND.map((p,i)=>h`<div class="note" key=${i}>${p}</div>`)}</aside></div>`};
@@ -1938,7 +1949,8 @@ const Landing=({logado,onEntrar})=>{const raiz=React.useRef(),[mapa,smapa]=React
 
    Metadados por conta (localStorage, chave LS+'.sync'): { rev: última revisão confirmada pela nuvem, hash: impressão do estado
    que corresponde a essa revisão, at: data da última sincronização confirmada }. Pendente = impressão do estado atual ≠ hash.
-   O payload é o objeto S inteiro (fichas, rede, perfil, configurações, rascunho), que NÃO contém credenciais. */
+   O payload é o objeto S inteiro (fichas, rede, perfil, configurações, rascunho), que NÃO contém credenciais; imagens já enviadas
+   ao Storage privado vão como referência (syncCargaStr — Entrega 5, ver src/imagens-nuvem.js). */
 const SYNC_CFG={debounce:1200,backoff:[2000,4000,8000,16000,32000,60000],maxTentativas:8,limite:3.9*1024*1024,esperaInicial:8000};
 const SY={tok:0,user:null,cli:null,meta:null,estado:'desligado',erro:'',timer:null,voando:false,tent:0,ouvintes:new Set(),conflito:null,inicial:null};
 /* Estados: desligado · iniciando · salvo · pendente · salvando · offline · vazio (nada na nuvem ainda) · migrar (dados locais,
@@ -1950,7 +1962,33 @@ function syncStr(v){return JSON.stringify(v,function(k,x){return x&&typeof x=='o
 function syncHash(s){let h=0x811c9dc5;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0}return h.toString(16)+':'+s.length}
 /* Há algo que valha guardar? (uma conta nova só com o nome padrão não conta) */
 function temConteudo(d){if(!d||typeof d!='object')return false;const n=d.net||{},st=d.set||{},p=st.perfil||{};
- return!!((d.chars||[]).length||(n.people||[]).length||(n.edges||[]).length||d.wiz||st.img||p.titulo||p.bio||p.moldura||p.banner||(p.insignias||[]).length)}
+ return!!((d.chars||[]).length||(n.people||[]).length||(n.edges||[]).length||d.wiz||st.img||st.imgRef||p.titulo||p.bio||p.moldura||p.banner||(p.insignias||[]).length)}
+
+/* ===== Entrega 5 — imagens: o que vai para a nuvem =====
+   Cada imagem do jogador fica num "espaço" (slot): S.set.img/imgSrc (perfil), chars[].img/imgSrc (retrato) e net.people[].img.
+   Neste dispositivo o conteúdo continua em base64 (cache local: o app funciona offline e o editor de enquadramento não muda).
+   Depois que o arquivo é ENVIADO e CONFIRMADO pelo Storage privado, o espaço ganha uma referência  <campo>Ref = {p: caminho, h: impressão}
+   e, só então, o JSON enviado à nuvem leva a referência no lugar do base64 (syncCargaStr). Até lá (ou se o envio falhar), o base64
+   continua indo no JSON como antes: nenhuma imagem é trocada por uma referência que não foi confirmada.
+   Referências são caminhos de objeto (nunca URLs assinadas). Uma referência só vale se o caminho estiver na pasta da conta atual e se a
+   impressão bater com a imagem local; senão, ela é ignorada e o base64 local é enviado. */
+const IMG_K=['img','imgSrc'];
+const IMG_HC=new Map();
+/* Impressão com cache (as imagens têm centenas de KB e são comparadas a cada render). */
+function syncHashC(s){s=String(s||'');if(s.length<2048)return syncHash(s);let v=IMG_HC.get(s);if(!v){if(IMG_HC.size>64)IMG_HC.clear();v=syncHash(s);IMG_HC.set(s,v)}return v}
+function imgSlots(d){const r=[];if(!d||typeof d!='object')return r;const ad=(o,area,id,cs)=>{if(o&&typeof o=='object')cs.forEach(c=>r.push({o,c,area,id}))};
+ ad(d.set,'profile','avatar',IMG_K);(Array.isArray(d.chars)?d.chars:[]).forEach(x=>ad(x,'characters',x&&x.id,IMG_K));
+ ((d.net&&Array.isArray(d.net.people))?d.net.people:[]).forEach(x=>ad(x,'network',x&&x.id,['img']));return r}
+function imgRefOk(r){const u=SY.user&&SY.user.id;return!!(u&&r&&typeof r=='object'&&typeof r.p=='string'&&typeof r.h=='string'&&r.p.indexOf(u+'/')===0)}
+/* Igual a syncStr, mas com as imagens já confirmadas no Storage trocadas pela referência. É o que vai para a nuvem e o que se compara. */
+function syncCargaStr(v){return JSON.stringify(v,function(k,x){if(!x||typeof x!='object'||Array.isArray(x))return x;let o=x;
+ if(x.imgRef!==undefined||x.imgSrcRef!==undefined){o=Object.assign({},x);IMG_K.forEach(c=>{const rk=c+'Ref',r=o[rk];if(r===undefined)return;
+  if(!imgRefOk(r)||(o[c]&&syncHashC(o[c])!==r.h)){delete o[rk];return}   // referência alheia, inválida ou desatualizada: vale o conteúdo local
+  o[c]='';o[rk]={p:r.p,h:r.h}})}
+ return Object.keys(o).sort().reduce((a,c)=>(a[c]=o[c],a),{})})}
+/* Ao trocar o estado pelo da nuvem: reaproveita as imagens que este dispositivo já tem (mesma impressão), sem baixar de novo. */
+function imgHerdar(novo,velho){const m=new Map();imgSlots(velho).forEach(({o,c})=>{const v=o[c];if(v&&typeof v=='string')m.set(syncHashC(v),v)});
+ imgSlots(novo).forEach(({o,c})=>{const r=o[c+'Ref'];if(r&&typeof r=='object'&&!o[c]&&m.has(r.h))o[c]=m.get(r.h)});return novo}
 const syncMetaKey=()=>LS+'.sync';
 function syncLerMeta(){try{const m=JSON.parse(localStorage.getItem(syncMetaKey())||'null');if(m&&typeof m=='object')return{rev:Math.max(0,+m.rev||0),hash:String(m.hash||''),at:m.at||null,mod:m.mod||null}}catch(e){}return{rev:0,hash:'',at:null,mod:null}}
 function syncGravarMeta(){try{localStorage.setItem(syncMetaKey(),JSON.stringify(SY.meta))}catch(e){}}
@@ -1959,7 +1997,7 @@ function syncDispositivo(){const u=(typeof navigator!='undefined'&&navigator.use
  o=/Android/.test(u)?'Android':/iPhone|iPad|iPod/.test(u)?'iOS':/Windows/.test(u)?'Windows':/Mac OS X/.test(u)?'macOS':/Linux/.test(u)?'Linux':'';return(b+(o?' · '+o:'')).slice(0,80)}
 
 function syncDefinir(estado,erro){SY.estado=estado;SY.erro=erro||'';SY.ouvintes.forEach(f=>{try{f()}catch(e){}})}
-function syncStatus(){let pend=false;try{pend=!!(SY.user&&SY.meta&&syncHash(syncStr(S))!==SY.meta.hash)}catch(e){}
+function syncStatus(){let pend=false;try{pend=!!(SY.user&&SY.meta&&syncHash(syncCargaStr(S))!==SY.meta.hash)}catch(e){}
  return{estado:SY.estado,erro:SY.erro,at:SY.meta&&SY.meta.at,rev:SY.meta?SY.meta.rev:0,pendente:pend,conflito:SY.conflito,ativo:!!SY.user}}
 function syncOuvir(f){SY.ouvintes.add(f);return()=>SY.ouvintes.delete(f)}
 
@@ -1974,7 +2012,7 @@ function syncTipoErro(e){const c=String(e&&e.code||''),s=+(e&&e.status)||0,m=Str
 /* Decisão inicial (pura, testada): compara o estado local, os metadados deste dispositivo e o registro remoto. */
 function syncDecidir({remoto,meta,localStr}){const lh=syncHash(localStr),tem=temConteudo(JSON.parse(localStr)),mudou=lh!==meta.hash;
  if(!remoto)return meta.rev>0?'remoto-apagado':tem?'migrar':'vazio';
- const rh=syncHash(syncStr(remoto.data)),rv=+remoto.revision;
+ const rh=syncHash(syncCargaStr(remoto.data)),rv=+remoto.revision;
  if(rh===lh)return'igual';
  if(meta.rev===rv)return mudou?'enviar':'conflito';                   // nuvem igual à última sincronia: só o local mudou
  if(meta.rev<rv){if(!tem&&!mudou||!tem&&meta.rev===0)return'adotar';   // dispositivo vazio: traz da nuvem
@@ -1986,9 +2024,9 @@ async function syncBuscar(cols){const{data,error}=await SY.cli.from('sodual_user
 
 /* Substitui o estado local pelo da nuvem (guarda antes uma cópia do local, se havia conteúdo). Não marca pendência. */
 function syncAdotar(rem){try{if(temConteudo(S))localStorage.setItem(LS+'.antes-nuvem',JSON.stringify({salvo:new Date().toISOString(),dados:S}))}catch(e){}
- S=norm(JSON.parse(JSON.stringify(rem.data)));try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}
+ const velho=S;S=imgHerdar(norm(JSON.parse(JSON.stringify(rem.data))),velho);try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}
  if(typeof ui!='undefined'&&ui){ui.w=null}
- SY.meta=Object.assign({},SY.meta,{rev:+rem.revision,hash:syncHash(syncStr(S)),at:rem.updated_at||null});syncGravarMeta();
+ SY.meta=Object.assign({},SY.meta,{rev:+rem.revision,hash:syncHash(syncCargaStr(S)),at:rem.updated_at||null});syncGravarMeta();
  if(typeof applySet=='function')try{applySet()}catch(e){}if(typeof R=='function')try{R()}catch(e){}}
 
 /* Início da sessão de sincronização para a conta já carregada do localStorage (openAccount). Devolve a promessa da decisão inicial. */
@@ -2000,8 +2038,8 @@ function syncIniciar(user,o){o=o||{};syncEncerrar();const tok=++SY.tok;Object.as
   /* Compara com a versão da nuvem já normalizada (numa cópia): o mesmo conteúdo salvo por uma versão anterior do app
      não pode parecer "diferente" só porque norm() acrescenta campos novos. */
   let remN=null;if(rem){try{remN=Object.assign({},rem,{data:norm(JSON.parse(JSON.stringify(rem.data)))})}catch(e){remN=rem}}
-  const d=syncDecidir({remoto:remN,meta:SY.meta,localStr:syncStr(S)});
-  if(d=='igual'){SY.meta=Object.assign({},SY.meta,{rev:+rem.revision,hash:syncHash(syncStr(S)),at:rem.updated_at||SY.meta.at});syncGravarMeta();syncDefinir('salvo')}
+  const d=syncDecidir({remoto:remN,meta:SY.meta,localStr:syncCargaStr(S)});
+  if(d=='igual'){SY.meta=Object.assign({},SY.meta,{rev:+rem.revision,hash:syncHash(syncCargaStr(S)),at:rem.updated_at||SY.meta.at});syncGravarMeta();syncDefinir('salvo')}
   else if(d=='adotar'){syncAdotar(rem);syncDefinir('salvo')}
   else if(d=='enviar'){syncDefinir('pendente');syncEnviar()}
   else if(d=='vazio')syncDefinir('vazio');
@@ -2022,7 +2060,7 @@ function syncAgendar(ms){clearTimeout(SY.timer);const tok=SY.tok;SY.timer=setTim
 /* Envia o snapshot atual (uma requisição por vez). Mudanças feitas durante o envio geram um novo envio depois. */
 async function syncEnviar(){if(!SY.user||!SY.cli||SY.voando)return;clearTimeout(SY.timer);
  const e=SY.estado;if(e=='iniciando'||e=='migrar'||e=='adiado'||e=='conflito'||e=='grande'||e=='desligado')return;
- const tok=SY.tok,str=syncStr(S),h=syncHash(str);
+ const tok=SY.tok,str=syncCargaStr(S),h=syncHash(str);
  if(h===SY.meta.hash){syncDefinir('salvo');return}
  if(SY.meta.rev===0&&!temConteudo(S)){syncDefinir('vazio');return}            // nunca cria um registro vazio
  if(str.length>SYNC_CFG.limite){syncDefinir('grande','Os dados (principalmente imagens) passam do limite da nuvem.');return}
@@ -2030,9 +2068,9 @@ async function syncEnviar(){if(!SY.user||!SY.cli||SY.voando)return;clearTimeout(
  try{const{data,error}=await SY.cli.rpc('sodual_sync_put',{p_data:JSON.parse(str),p_expected_revision:SY.meta.rev,p_schema_version:VER,p_device:syncDispositivo()});
   if(tok!==SY.tok)return;if(error)throw error;
   if(data&&data.ok){SY.meta=Object.assign({},SY.meta,{rev:+data.revision,hash:h,at:data.updated_at||new Date().toISOString()});syncGravarMeta();SY.tent=0;
-   if(syncHash(syncStr(S))!==h){syncDefinir('pendente');syncAgendar(SYNC_CFG.debounce)}else syncDefinir('salvo')}
+   if(syncHash(syncCargaStr(S))!==h){syncDefinir('pendente');syncAgendar(SYNC_CFG.debounce)}else syncDefinir('salvo')}
   else if(data&&data.conflict){let rem=null;try{rem=await syncBuscar()}catch(x){}if(tok!==SY.tok)return;
-   if(rem&&syncHash(syncStr(rem.data))===h){SY.meta=Object.assign({},SY.meta,{rev:+rem.revision,hash:h,at:rem.updated_at});syncGravarMeta();syncDefinir('salvo')} // outra aba já gravou o mesmo
+   if(rem&&syncHash(syncCargaStr(rem.data))===h){SY.meta=Object.assign({},SY.meta,{rev:+rem.revision,hash:h,at:rem.updated_at});syncGravarMeta();syncDefinir('salvo')} // outra aba já gravou o mesmo
    else{SY.conflito={tipo:rem?'conflito':'remoto-apagado',remoto:rem?{revision:+rem.revision,updated_at:rem.updated_at,updated_by_device:rem.updated_by_device}:null};syncDefinir('conflito')}}
   else throw Object.assign(new Error('Resposta inesperada da nuvem'),{code:'resp'})}
  catch(err){if(tok===SY.tok)syncFalha(err)}
@@ -2066,7 +2104,7 @@ function syncEncerrar(){SY.tok++;clearTimeout(SY.timer);Object.assign(SY,{user:n
 async function syncVerificar(){if(!SY.user||SY.voando)return;const e=SY.estado;if(e!='salvo'&&e!='pendente'&&e!='offline')return;
  if(e=='offline')return syncAgora();const tok=SY.tok;let rem;try{rem=await syncBuscar('revision,updated_at')}catch(x){return}
  if(tok!==SY.tok||!rem||+rem.revision===SY.meta.rev)return;
- const local=syncHash(syncStr(S))!==SY.meta.hash;if(local){syncEnviar();return}                   // o envio vai detectar o conflito
+ const local=syncHash(syncCargaStr(S))!==SY.meta.hash;if(local){syncEnviar();return}                   // o envio vai detectar o conflito
  try{const full=await syncBuscar();if(tok===SY.tok&&full){syncAdotar(full);syncDefinir('salvo');if(typeof toast=='function')toast('Dados atualizados com a versão da nuvem','ok')}}catch(x){}}
 
 /* ===== Entrega 3 — resolução explícita de conflitos e exclusão da nuvem =====
@@ -2099,14 +2137,14 @@ async function syncManterNuvem(){if(!SY.user)return{ok:false,motivo:'sem-sessao'
 /* "Manter versão deste dispositivo": grava este estado SOBRE a revisão que o jogador viu (revVista; 0 = nuvem vazia).
    Se a nuvem mudou depois disso, devolve conflito de novo (a interface mostra os dados novos e pede outra confirmação). */
 async function syncManterDispositivo(revVista){if(!SY.user)return{ok:false,motivo:'sem-sessao'};if(SY.voando)return{ok:false,motivo:'ocupado'};
- const tok=SY.tok,str=syncStr(S),h=syncHash(str);revVista=Math.max(0,+revVista||0);
+ const tok=SY.tok,str=syncCargaStr(S),h=syncHash(str);revVista=Math.max(0,+revVista||0);
  if(str.length>SYNC_CFG.limite)return{ok:false,motivo:'grande'};
  if(SY.remDados)syncGuardarCopia('.nuvem-substituida',SY.remDados,{revision:revVista});
  SY.voando=true;clearTimeout(SY.timer);syncDefinir('salvando');
  try{const{data,error}=await SY.cli.rpc('sodual_sync_put',{p_data:JSON.parse(str),p_expected_revision:revVista,p_schema_version:VER,p_device:syncDispositivo()});
   if(tok!==SY.tok)return{ok:false,motivo:'descartado'};if(error)throw error;
   if(data&&data.ok){SY.meta=Object.assign({},SY.meta,{rev:+data.revision,hash:h,at:data.updated_at||new Date().toISOString()});syncGravarMeta();SY.conflito=null;SY.remDados=null;SY.tent=0;
-   if(syncHash(syncStr(S))!==h){syncDefinir('pendente');syncAgendar(SYNC_CFG.debounce)}else syncDefinir('salvo');return{ok:true,revision:+data.revision}}
+   if(syncHash(syncCargaStr(S))!==h){syncDefinir('pendente');syncAgendar(SYNC_CFG.debounce)}else syncDefinir('salvo');return{ok:true,revision:+data.revision}}
   SY.conflito={tipo:data&&data.revision?'conflito':'remoto-apagado',remoto:data&&data.revision?{revision:+data.revision,updated_at:data.updated_at,updated_by_device:data.updated_by_device}:null};
   syncDefinir('conflito');return{ok:false,motivo:'conflito',revision:data?+data.revision:0}}
  catch(e){if(tok===SY.tok)syncDefinir('conflito',syncTipoErro(e)=='rede'?'Sem conexão: tente de novo quando a internet voltar.':String(e&&e.message||'Falha'));return{ok:false,motivo:syncTipoErro(e),erro:e}}
@@ -2127,6 +2165,114 @@ async function syncExcluirNuvem(){if(!SY.user)return{ok:false,motivo:'sem-sessao
 if(typeof window!='undefined'&&window.addEventListener){
  window.addEventListener('online',()=>syncAgora());
  document.addEventListener('visibilitychange',()=>{if(document.visibilityState=='visible')syncVerificar()})}
+</script>
+<script>/* ===== Imagens na nuvem — Entrega 5 (Supabase Storage PRIVADO, bucket "sodual-images") =====
+   Trabalha em segundo plano, uma tarefa por vez, só quando a sincronização do JSON está ativa (salvo/pendente/salvando);
+   nunca envia nada enquanto a conta aguarda decisão (migrar/adiado/conflito).
+
+   Envio (imagem local em base64 ainda sem referência válida):
+     1. valida formato (JPEG/PNG/WebP em data URL) e tamanho (≤ 1 MB, limite do bucket);
+     2. nome do arquivo = SHA-256 do conteúdo (seguro e único):  <uid>/profile/avatar/<sha>.jpg · <uid>/characters/<id>/<sha>.jpg · <uid>/network/<id>/<sha>.jpg
+     3. envia sem sobrescrever (upsert:false; "já existe" = mesmo conteúdo, conta como enviado);
+     4. só depois da confirmação grava a referência {p,h} no espaço, se a imagem local ainda for a mesma (recorte e original preservados);
+     5. save() → o JSON da nuvem passa a levar a referência no lugar do base64 (syncCargaStr em src/sync.js).
+   Falha: a imagem local fica intacta, o base64 continua indo no JSON, a tarefa fica pendente e é tentada de novo (backoff) ou por
+   "Tentar novamente" em Configurações › Sincronização.
+
+   Recebimento (referência sem imagem local, p.ex. em outro dispositivo): pede uma URL ASSINADA (validade IMGN_CFG.validade, só em
+   memória, renovada ao expirar), baixa, confere a impressão e guarda o base64 só neste dispositivo (sem marcar alteração).
+
+   Backup portátil: imgExportavel() devolve uma cópia com todas as imagens em base64 e SEM referências privadas. */
+const IMGN_CFG={bucket:'sodual-images',validade:3600,maxBytes:1048576,espera:1500,backoff:[5000,15000,30000,60000,120000],maxTent:6};
+const IMGN={tok:-1,timer:null,prox:0,rodando:false,tent:0,erro:'',ignorar:new Set(),urls:new Map()};
+const IMGN_OK=['salvo','pendente','salvando'],IMGN_EXT={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'};
+const IMGN_RE=/^data:(image\/(?:jpeg|png|webp));base64,/;
+
+/* Estado por sessão: troca de conta (SY.tok) zera tudo e cancela o que estava agendado. */
+function imgnSessao(){if(IMGN.tok===SY.tok)return;clearTimeout(IMGN.timer);Object.assign(IMGN,{tok:SY.tok,timer:null,prox:0,rodando:false,tent:0,erro:'',ignorar:new Set(),urls:new Map()})}
+function imgnBlob(d){const m=IMGN_RE.exec(d||'');if(!m)return null;let bin;try{bin=atob(d.slice(m[0].length))}catch(e){return null}
+ const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new Blob([u],{type:m[1]})}
+async function imgnDataUrl(blob){const b=new Uint8Array(await blob.arrayBuffer());let s='';for(let i=0;i<b.length;i+=0x8000)s+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));
+ return'data:'+(String(blob.type||'image/jpeg').split(';')[0])+';base64,'+btoa(s)}
+async function imgnSha(blob){const d=await crypto.subtle.digest('SHA-256',await blob.arrayBuffer());return Array.from(new Uint8Array(d),x=>x.toString(16).padStart(2,'0')).join('').slice(0,40)}
+const imgnSeg=id=>String(id==null?'':id).replace(/[^A-Za-z0-9_-]/g,'_').slice(0,64)||'x';
+const imgnPasta=(s,uid)=>uid+'/'+(s.area=='profile'?'profile/avatar':s.area+'/'+imgnSeg(s.id));
+const imgnJaExiste=e=>String(e&&(e.statusCode||e.status))=='409'||/already exists|duplicate/i.test(String(e&&e.message||''));
+const imgnAinda=s=>imgSlots(S).some(x=>x.o===s.o&&x.c===s.c);
+
+/* O que falta fazer agora (puro, barato graças ao cache de impressões). */
+function imgnTarefas(){const up=[],down=[];if(!SY.user)return{up,down};
+ imgSlots(S).forEach(s=>{const v=s.o[s.c],r=s.o[s.c+'Ref'];
+  if(v&&typeof v=='string'){const h=syncHashC(v);if(IMGN_RE.test(v)&&!(imgRefOk(r)&&r.h===h)&&!IMGN.ignorar.has(h))up.push(s)}
+  else if(imgRefOk(r)&&!IMGN.ignorar.has('d:'+r.p))down.push(s)});return{up,down}}
+function imgnStatus(){imgnSessao();const t=imgnTarefas();return{ativo:!!SY.user,enviar:t.up.length,baixar:t.down.length,erro:IMGN.erro,rodando:IMGN.rodando,
+ ignoradas:[...IMGN.ignorar].length,espera:IMGN.prox===Infinity?'parado':IMGN.prox>Date.now()?'aguardando':''}}
+
+async function imgnUrl(p,cli,novo){const c=IMGN.urls.get(p);if(!novo&&c&&c.exp-60000>Date.now())return c.u;
+ const{data,error}=await cli.storage.from(IMGN_CFG.bucket).createSignedUrl(p,IMGN_CFG.validade);if(error)throw error;
+ if(!data||!data.signedUrl)throw Object.assign(new Error('URL assinada ausente'),{code:'resp'});
+ IMGN.urls.set(p,{u:data.signedUrl,exp:Date.now()+IMGN_CFG.validade*1000});return data.signedUrl}
+/* Baixa por URL assinada (renova uma vez se expirou) e confere a impressão. Devolve o data URL ou lança erro. */
+async function imgnBuscar(r,cli){let resp;for(let i=0;i<2;i++){const u=await imgnUrl(r.p,cli,i>0);resp=await fetch(u);if(resp.ok||(resp.status!=400&&resp.status!=401&&resp.status!=403))break}
+ if(!resp.ok)throw Object.assign(new Error('Download da imagem falhou ('+resp.status+')'),{status:resp.status});
+ const d=await imgnDataUrl(await resp.blob());if(syncHashC(d)!==r.h)throw Object.assign(new Error('Imagem da nuvem não confere'),{code:'hash'});return d}
+
+async function imgnEnviar(s,uid,cli,tok){const v=s.o[s.c],h=syncHashC(v),blob=imgnBlob(v);
+ if(!blob||blob.size>IMGN_CFG.maxBytes){IMGN.ignorar.add(h);return false}                 // fica só local (e no JSON): nunca vira referência
+ const p=imgnPasta(s,uid)+'/'+(await imgnSha(blob))+'.'+IMGN_EXT[blob.type];
+ const{error}=await cli.storage.from(IMGN_CFG.bucket).upload(p,blob,{contentType:blob.type,upsert:false,cacheControl:'31536000'});
+ if(tok!==SY.tok)return false;if(error&&!imgnJaExiste(error))throw error;
+ if(!imgnAinda(s)||s.o[s.c]!==v)return false;                                              // mudou durante o envio: a nova imagem entra na próxima rodada
+ s.o[s.c+'Ref']={p,h};save();return true}
+async function imgnBaixar(s,cli,tok){const r=s.o[s.c+'Ref'];let d;
+ try{d=await imgnBuscar(r,cli)}catch(e){if(e&&(e.status==404||e.code=='hash'||/not found|object not found/i.test(String(e.message)))){IMGN.ignorar.add('d:'+r.p);return false}throw e}
+ if(tok!==SY.tok||!imgnAinda(s)||s.o[s.c]||s.o[s.c+'Ref']!==r)return false;
+ s.o[s.c]=d;try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}                      // cache local; não é alteração do jogador
+ return true}
+
+/* Erros do Storage (storage-js não usa os códigos do PostgREST). */
+function imgnTipo(e){const m=String(e&&e.message||''),s=+(e&&(e.status||e.statusCode))||0;
+ if(/bucket not found/i.test(m))return'servidor';
+ if(/jwt|token.*expired|invalid.*token/i.test(m)||s==401)return'auth';
+ if(/row-level security|row level security|not authorized|unauthorized|permission/i.test(m)||s==403)return'negado';
+ if(e&&(e.name=='StorageUnknownError'||e.name=='TypeError')||/failed to fetch|network|load failed|timeout/i.test(m)||s>=500)return'rede';
+ return'erro'}
+async function imgnRodar(){imgnSessao();if(IMGN.rodando||!SY.user||!SY.cli||!IMGN_OK.includes(SY.estado))return;
+ const t=imgnTarefas();if(!t.up.length&&!t.down.length){if(IMGN.erro){IMGN.erro='';syncDefinir(SY.estado,SY.erro)}return}
+ const tok=SY.tok,uid=SY.user.id,cli=SY.cli;
+ if(!cli.storage||typeof crypto=='undefined'||!crypto.subtle){IMGN.erro='Este navegador não permite enviar imagens à nuvem (é preciso HTTPS).';IMGN.prox=Infinity;syncDefinir(SY.estado,SY.erro);return}
+ IMGN.rodando=true;let falha=null,mudou=false;
+ try{for(const s of t.up){if(tok!==SY.tok)return;try{if(await imgnEnviar(s,uid,cli,tok))mudou=true}catch(e){falha=e;break}}
+  if(!falha)for(const s of t.down){if(tok!==SY.tok)return;try{if(await imgnBaixar(s,cli,tok))mudou=true}catch(e){falha=e;break}}}
+ finally{if(tok===SY.tok){IMGN.rodando=false;
+  if(falha){const k=imgnTipo(falha);IMGN.tent++;
+   IMGN.erro=k=='rede'?'Sem conexão: as imagens ficam neste dispositivo e serão enviadas depois.':k=='auth'?'Sessão expirada: entre de novo para enviar as imagens.':
+    k=='servidor'?'O armazenamento de imagens ainda não está configurado (migração 002).':k=='negado'?'A nuvem recusou a imagem (permissões do Storage; confira a migração 002).':
+    'Falha ao sincronizar imagens: '+String(falha.message||falha).slice(0,120);
+   if(k!='servidor'&&k!='negado'&&IMGN.tent<=IMGN_CFG.maxTent){const ms=IMGN_CFG.backoff[Math.min(IMGN.tent-1,IMGN_CFG.backoff.length-1)];IMGN.prox=Date.now()+ms;clearTimeout(IMGN.timer);
+    IMGN.timer=setTimeout(()=>{IMGN.timer=null;IMGN.prox=0;if(tok===SY.tok)imgnRodar()},ms)}else IMGN.prox=Infinity}
+  else{IMGN.tent=0;IMGN.erro=''}
+  if(mudou&&typeof R=='function')try{R()}catch(e){}
+  syncDefinir(SY.estado,SY.erro)}}}
+
+/* Agenda uma rodada (chamado a cada mudança de estado da sincronização). Respeita o backoff e nunca roda duas ao mesmo tempo. */
+function imgnAgendar(ms){imgnSessao();if(!SY.user||!SY.cli||!IMGN_OK.includes(SY.estado)||IMGN.rodando||IMGN.timer||IMGN.prox)return;
+ const t=imgnTarefas();if(!t.up.length&&!t.down.length)return;const tok=SY.tok;
+ IMGN.timer=setTimeout(()=>{IMGN.timer=null;if(tok===SY.tok)imgnRodar()},ms==null?IMGN_CFG.espera:ms)}
+/* "Tentar novamente": zera o backoff e as imagens marcadas como problemáticas nesta sessão. */
+function imgnAgora(){imgnSessao();clearTimeout(IMGN.timer);Object.assign(IMGN,{timer:null,prox:0,tent:0,erro:'',ignorar:new Set()});return imgnRodar()}
+
+/* Backup portátil: cópia de d com todas as imagens em base64 (do cache local ou baixadas agora) e sem referências privadas. */
+async function imgExportavel(d){const c=JSON.parse(JSON.stringify(d||{})),m=new Map();let faltando=0;
+ imgSlots(S).forEach(({o,c:k})=>{const v=o[k];if(v&&typeof v=='string')m.set(syncHashC(v),v)});
+ for(const{o,c:k}of imgSlots(c)){const rk=k+'Ref',r=o[rk];if(r===undefined)continue;
+  if(!o[k]&&r&&typeof r=='object'){if(m.has(r.h))o[k]=m.get(r.h);
+   else if(imgRefOk(r)&&SY.cli&&SY.cli.storage){try{o[k]=await imgnBuscar(r,SY.cli)}catch(e){faltando++}}else faltando++}
+  delete o[rk]}
+ return{dados:c,faltando}}
+
+if(typeof syncOuvir=='function')syncOuvir(()=>imgnAgendar());
+if(typeof window!='undefined'&&window.addEventListener)window.addEventListener('online',()=>{if(SY.user&&IMGN.erro)imgnAgora()});
 </script>
 <script>/* ===== Autenticação — Supabase Auth (somente e-mail e senha) =====
  - Configuração pública em window.SODUAL_CONFIG (arquivo config.js; ver config.example.js e README). Só Project URL e publishable/anon key.
@@ -2362,8 +2508,8 @@ const ConflitoModal=()=>{const s=useSync(),[d,sd]=React.useState(null),[er,se]=R
  React.useEffect(()=>{if(aberto)carregar()},[aberto,s.conflito&&s.conflito.remoto&&s.conflito.remoto.revision]);
  if(!aberto)return null;
  const fechar=()=>{ui.cfAberto=false;ui.cfDispensado=true;scf(null);t()},
-  exportar=()=>{const dia=new Date().toISOString().slice(0,10);baixarJSON('sodual-este-dispositivo-'+dia+'.json',{_meta:{app:'SODUAL',formato:2,origem:'este dispositivo',exportado:new Date().toISOString()},...S});
-   if(d&&d.remoto)setTimeout(()=>baixarJSON('sodual-nuvem-rev'+d.remoto.revision+'-'+dia+'.json',{_meta:{app:'SODUAL',formato:2,origem:'nuvem',revisao:d.remoto.revision,exportado:new Date().toISOString()},...d.remoto.data}),300);toast('Backup exportado','ok')},
+  exportar=async()=>{const dia=new Date().toISOString().slice(0,10),em=new Date().toISOString();await exportarPortatil('sodual-este-dispositivo-'+dia+'.json',{origem:'este dispositivo',exportado:em},S);
+   if(d&&d.remoto){await new Promise(r=>setTimeout(r,300));await exportarPortatil('sodual-nuvem-rev'+d.remoto.revision+'-'+dia+'.json',{origem:'nuvem',revisao:d.remoto.revision,exportado:em},d.remoto.data)}},
   agir=async()=>{sb(true);se('');const r=cf=='nuvem'?await syncManterNuvem():await syncManterDispositivo(d&&d.remoto?d.remoto.revision:0);sb(false);
    if(r.ok){scf(null);ui.cfAberto=false;toast(cf=='nuvem'?'Versão da nuvem aplicada. A versão anterior deste dispositivo ficou guardada.':'Versão deste dispositivo enviada para a nuvem.','ok');return}
    scf(null);if(r.motivo=='conflito'){toast('A nuvem mudou enquanto você decidia. Confira a versão nova.','warn');carregar()}else se(r.motivo=='rede'?'Sem conexão: nada foi alterado. Tente de novo quando a internet voltar.':r.motivo=='sem-nuvem'?'Não há mais dados na nuvem para manter.':'Não foi possível concluir agora. Nada foi alterado.')};

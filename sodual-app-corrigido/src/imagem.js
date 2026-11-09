@@ -1,5 +1,5 @@
 /* ===== Enquadramento de imagens (avatar do perfil e retrato do personagem) =====
-   Armazenamento (mesmo do resto do app: localStorage da conta, sem Supabase Storage):
+   Armazenamento local (localStorage da conta; com a nuvem ativa, uma cópia vai para o Storage privado — ver src/imagens-nuvem.js):
    - img      recorte final já pronto (JPEG em data URL) — é o que todas as telas exibem, como antes;
    - imgSrc   cópia reduzida da imagem original (lado maior ≤ IMG_SRC_LADO), para reabrir o editor sem perder o resto da foto;
    - imgCrop  {x,y,z}: centro do recorte em coordenadas normalizadas da original (0..1) e zoom (1 = preenche o quadro).
@@ -31,11 +31,12 @@ function gerarRecorte(el,st,cfg){const iw=el.naturalWidth,ih=el.naturalHeight,r=
  return jpegAte((x,w,h)=>x.drawImage(el,r.sx,r.sy,r.sw,r.sh,0,0,w,h),W,H,IMG_OUT_LIM)}
 function gerarFonte(el){const iw=el.naturalWidth,ih=el.naturalHeight,k=Math.min(1,IMG_SRC_LADO/Math.max(iw,ih));return jpegAte((x,w,h)=>x.drawImage(el,0,0,w,h),iw*k,ih*k,IMG_SRC_LIM)}
 /* Grava o resultado no objeto (S.set ou ficha). Só aqui a imagem anterior é substituída. Sem espaço, guarda só o recorte; se nem isso couber, restaura tudo. */
-function aplicarImagem(o,r){const ant={img:o.img,imgSrc:o.imgSrc,imgCrop:o.imgCrop};Object.assign(o,{img:r.img,imgSrc:r.src||'',imgCrop:r.src?r.crop:null});
+/* As referências da nuvem (imgRef/imgSrcRef, Entrega 5) apontam para a imagem ANTERIOR: saem junto; a nova é enviada em segundo plano. */
+function aplicarImagem(o,r){const ant={img:o.img,imgSrc:o.imgSrc,imgCrop:o.imgCrop,imgRef:o.imgRef,imgSrcRef:o.imgSrcRef};delete o.imgRef;delete o.imgSrcRef;Object.assign(o,{img:r.img,imgSrc:r.src||'',imgCrop:r.src?r.crop:null});
  if(save()){R();return true}
  o.imgSrc='';o.imgCrop=null;if(save()){R();toast('Enquadramento salvo. Sem espaço para guardar a original: um novo ajuste partirá do recorte.');return 'parcial'}
  Object.assign(o,ant);save();R();return false}
-const limparImagem=o=>{o.img='';o.imgSrc='';o.imgCrop=null};
+const limparImagem=o=>{o.img='';o.imgSrc='';o.imgCrop=null;delete o.imgRef;delete o.imgSrcRef};
 
 /* Editor: arrastar (mouse/toque), pinça para zoom, roda do mouse, controle deslizante e teclado (setas, + e −). */
 const Cropper=({src,ini,fonte,cfg,titulo,onSave,onCancel,onTrocar})=>{const[im,sim]=React.useState(null),[st,sst]=React.useState(ini||{x:.5,y:.5,z:1}),[busy,sb]=React.useState(false),

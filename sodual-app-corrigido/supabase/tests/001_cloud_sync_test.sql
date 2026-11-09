@@ -152,3 +152,5 @@ do $$ begin
 end $$;
 
 rollback;
+-- O SQL Editor mostra só o resultado da última consulta: esta linha só é alcançada se nenhuma verificação falhou.
+select 'SODUAL: TODAS AS VERIFICAÇÕES PASSARAM' as resultado;

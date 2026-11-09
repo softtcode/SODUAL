@@ -13,7 +13,8 @@
 
    Metadados por conta (localStorage, chave LS+'.sync'): { rev: última revisão confirmada pela nuvem, hash: impressão do estado
    que corresponde a essa revisão, at: data da última sincronização confirmada }. Pendente = impressão do estado atual ≠ hash.
-   O payload é o objeto S inteiro (fichas, rede, perfil, configurações, rascunho), que NÃO contém credenciais. */
+   O payload é o objeto S inteiro (fichas, rede, perfil, configurações, rascunho), que NÃO contém credenciais; imagens já enviadas
+   ao Storage privado vão como referência (syncCargaStr — Entrega 5, ver src/imagens-nuvem.js). */
 const SYNC_CFG={debounce:1200,backoff:[2000,4000,8000,16000,32000,60000],maxTentativas:8,limite:3.9*1024*1024,esperaInicial:8000};
 const SY={tok:0,user:null,cli:null,meta:null,estado:'desligado',erro:'',timer:null,voando:false,tent:0,ouvintes:new Set(),conflito:null,inicial:null};
 /* Estados: desligado · iniciando · salvo · pendente · salvando · offline · vazio (nada na nuvem ainda) · migrar (dados locais,
@@ -25,7 +26,33 @@ function syncStr(v){return JSON.stringify(v,function(k,x){return x&&typeof x=='o
 function syncHash(s){let h=0x811c9dc5;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0}return h.toString(16)+':'+s.length}
 /* Há algo que valha guardar? (uma conta nova só com o nome padrão não conta) */
 function temConteudo(d){if(!d||typeof d!='object')return false;const n=d.net||{},st=d.set||{},p=st.perfil||{};
- return!!((d.chars||[]).length||(n.people||[]).length||(n.edges||[]).length||d.wiz||st.img||p.titulo||p.bio||p.moldura||p.banner||(p.insignias||[]).length)}
+ return!!((d.chars||[]).length||(n.people||[]).length||(n.edges||[]).length||d.wiz||st.img||st.imgRef||p.titulo||p.bio||p.moldura||p.banner||(p.insignias||[]).length)}
+
+/* ===== Entrega 5 — imagens: o que vai para a nuvem =====
+   Cada imagem do jogador fica num "espaço" (slot): S.set.img/imgSrc (perfil), chars[].img/imgSrc (retrato) e net.people[].img.
+   Neste dispositivo o conteúdo continua em base64 (cache local: o app funciona offline e o editor de enquadramento não muda).
+   Depois que o arquivo é ENVIADO e CONFIRMADO pelo Storage privado, o espaço ganha uma referência  <campo>Ref = {p: caminho, h: impressão}
+   e, só então, o JSON enviado à nuvem leva a referência no lugar do base64 (syncCargaStr). Até lá (ou se o envio falhar), o base64
+   continua indo no JSON como antes: nenhuma imagem é trocada por uma referência que não foi confirmada.
+   Referências são caminhos de objeto (nunca URLs assinadas). Uma referência só vale se o caminho estiver na pasta da conta atual e se a
+   impressão bater com a imagem local; senão, ela é ignorada e o base64 local é enviado. */
+const IMG_K=['img','imgSrc'];
+const IMG_HC=new Map();
+/* Impressão com cache (as imagens têm centenas de KB e são comparadas a cada render). */
+function syncHashC(s){s=String(s||'');if(s.length<2048)return syncHash(s);let v=IMG_HC.get(s);if(!v){if(IMG_HC.size>64)IMG_HC.clear();v=syncHash(s);IMG_HC.set(s,v)}return v}
+function imgSlots(d){const r=[];if(!d||typeof d!='object')return r;const ad=(o,area,id,cs)=>{if(o&&typeof o=='object')cs.forEach(c=>r.push({o,c,area,id}))};
+ ad(d.set,'profile','avatar',IMG_K);(Array.isArray(d.chars)?d.chars:[]).forEach(x=>ad(x,'characters',x&&x.id,IMG_K));
+ ((d.net&&Array.isArray(d.net.people))?d.net.people:[]).forEach(x=>ad(x,'network',x&&x.id,['img']));return r}
+function imgRefOk(r){const u=SY.user&&SY.user.id;return!!(u&&r&&typeof r=='object'&&typeof r.p=='string'&&typeof r.h=='string'&&r.p.indexOf(u+'/')===0)}
+/* Igual a syncStr, mas com as imagens já confirmadas no Storage trocadas pela referência. É o que vai para a nuvem e o que se compara. */
+function syncCargaStr(v){return JSON.stringify(v,function(k,x){if(!x||typeof x!='object'||Array.isArray(x))return x;let o=x;
+ if(x.imgRef!==undefined||x.imgSrcRef!==undefined){o=Object.assign({},x);IMG_K.forEach(c=>{const rk=c+'Ref',r=o[rk];if(r===undefined)return;
+  if(!imgRefOk(r)||(o[c]&&syncHashC(o[c])!==r.h)){delete o[rk];return}   // referência alheia, inválida ou desatualizada: vale o conteúdo local
+  o[c]='';o[rk]={p:r.p,h:r.h}})}
+ return Object.keys(o).sort().reduce((a,c)=>(a[c]=o[c],a),{})})}
+/* Ao trocar o estado pelo da nuvem: reaproveita as imagens que este dispositivo já tem (mesma impressão), sem baixar de novo. */
+function imgHerdar(novo,velho){const m=new Map();imgSlots(velho).forEach(({o,c})=>{const v=o[c];if(v&&typeof v=='string')m.set(syncHashC(v),v)});
+ imgSlots(novo).forEach(({o,c})=>{const r=o[c+'Ref'];if(r&&typeof r=='object'&&!o[c]&&m.has(r.h))o[c]=m.get(r.h)});return novo}
 const syncMetaKey=()=>LS+'.sync';
 function syncLerMeta(){try{const m=JSON.parse(localStorage.getItem(syncMetaKey())||'null');if(m&&typeof m=='object')return{rev:Math.max(0,+m.rev||0),hash:String(m.hash||''),at:m.at||null,mod:m.mod||null}}catch(e){}return{rev:0,hash:'',at:null,mod:null}}
 function syncGravarMeta(){try{localStorage.setItem(syncMetaKey(),JSON.stringify(SY.meta))}catch(e){}}
@@ -34,7 +61,7 @@ function syncDispositivo(){const u=(typeof navigator!='undefined'&&navigator.use
  o=/Android/.test(u)?'Android':/iPhone|iPad|iPod/.test(u)?'iOS':/Windows/.test(u)?'Windows':/Mac OS X/.test(u)?'macOS':/Linux/.test(u)?'Linux':'';return(b+(o?' · '+o:'')).slice(0,80)}
 
 function syncDefinir(estado,erro){SY.estado=estado;SY.erro=erro||'';SY.ouvintes.forEach(f=>{try{f()}catch(e){}})}
-function syncStatus(){let pend=false;try{pend=!!(SY.user&&SY.meta&&syncHash(syncStr(S))!==SY.meta.hash)}catch(e){}
+function syncStatus(){let pend=false;try{pend=!!(SY.user&&SY.meta&&syncHash(syncCargaStr(S))!==SY.meta.hash)}catch(e){}
  return{estado:SY.estado,erro:SY.erro,at:SY.meta&&SY.meta.at,rev:SY.meta?SY.meta.rev:0,pendente:pend,conflito:SY.conflito,ativo:!!SY.user}}
 function syncOuvir(f){SY.ouvintes.add(f);return()=>SY.ouvintes.delete(f)}
 
@@ -49,7 +76,7 @@ function syncTipoErro(e){const c=String(e&&e.code||''),s=+(e&&e.status)||0,m=Str
 /* Decisão inicial (pura, testada): compara o estado local, os metadados deste dispositivo e o registro remoto. */
 function syncDecidir({remoto,meta,localStr}){const lh=syncHash(localStr),tem=temConteudo(JSON.parse(localStr)),mudou=lh!==meta.hash;
  if(!remoto)return meta.rev>0?'remoto-apagado':tem?'migrar':'vazio';
- const rh=syncHash(syncStr(remoto.data)),rv=+remoto.revision;
+ const rh=syncHash(syncCargaStr(remoto.data)),rv=+remoto.revision;
  if(rh===lh)return'igual';
  if(meta.rev===rv)return mudou?'enviar':'conflito';                   // nuvem igual à última sincronia: só o local mudou
  if(meta.rev<rv){if(!tem&&!mudou||!tem&&meta.rev===0)return'adotar';   // dispositivo vazio: traz da nuvem
@@ -61,9 +88,9 @@ async function syncBuscar(cols){const{data,error}=await SY.cli.from('sodual_user
 
 /* Substitui o estado local pelo da nuvem (guarda antes uma cópia do local, se havia conteúdo). Não marca pendência. */
 function syncAdotar(rem){try{if(temConteudo(S))localStorage.setItem(LS+'.antes-nuvem',JSON.stringify({salvo:new Date().toISOString(),dados:S}))}catch(e){}
- S=norm(JSON.parse(JSON.stringify(rem.data)));try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}
+ const velho=S;S=imgHerdar(norm(JSON.parse(JSON.stringify(rem.data))),velho);try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}
  if(typeof ui!='undefined'&&ui){ui.w=null}
- SY.meta=Object.assign({},SY.meta,{rev:+rem.revision,hash:syncHash(syncStr(S)),at:rem.updated_at||null});syncGravarMeta();
+ SY.meta=Object.assign({},SY.meta,{rev:+rem.revision,hash:syncHash(syncCargaStr(S)),at:rem.updated_at||null});syncGravarMeta();
  if(typeof applySet=='function')try{applySet()}catch(e){}if(typeof R=='function')try{R()}catch(e){}}
 
 /* Início da sessão de sincronização para a conta já carregada do localStorage (openAccount). Devolve a promessa da decisão inicial. */
@@ -75,8 +102,8 @@ function syncIniciar(user,o){o=o||{};syncEncerrar();const tok=++SY.tok;Object.as
   /* Compara com a versão da nuvem já normalizada (numa cópia): o mesmo conteúdo salvo por uma versão anterior do app
      não pode parecer "diferente" só porque norm() acrescenta campos novos. */
   let remN=null;if(rem){try{remN=Object.assign({},rem,{data:norm(JSON.parse(JSON.stringify(rem.data)))})}catch(e){remN=rem}}
-  const d=syncDecidir({remoto:remN,meta:SY.meta,localStr:syncStr(S)});
-  if(d=='igual'){SY.meta=Object.assign({},SY.meta,{rev:+rem.revision,hash:syncHash(syncStr(S)),at:rem.updated_at||SY.meta.at});syncGravarMeta();syncDefinir('salvo')}
+  const d=syncDecidir({remoto:remN,meta:SY.meta,localStr:syncCargaStr(S)});
+  if(d=='igual'){SY.meta=Object.assign({},SY.meta,{rev:+rem.revision,hash:syncHash(syncCargaStr(S)),at:rem.updated_at||SY.meta.at});syncGravarMeta();syncDefinir('salvo')}
   else if(d=='adotar'){syncAdotar(rem);syncDefinir('salvo')}
   else if(d=='enviar'){syncDefinir('pendente');syncEnviar()}
   else if(d=='vazio')syncDefinir('vazio');
@@ -97,7 +124,7 @@ function syncAgendar(ms){clearTimeout(SY.timer);const tok=SY.tok;SY.timer=setTim
 /* Envia o snapshot atual (uma requisição por vez). Mudanças feitas durante o envio geram um novo envio depois. */
 async function syncEnviar(){if(!SY.user||!SY.cli||SY.voando)return;clearTimeout(SY.timer);
  const e=SY.estado;if(e=='iniciando'||e=='migrar'||e=='adiado'||e=='conflito'||e=='grande'||e=='desligado')return;
- const tok=SY.tok,str=syncStr(S),h=syncHash(str);
+ const tok=SY.tok,str=syncCargaStr(S),h=syncHash(str);
  if(h===SY.meta.hash){syncDefinir('salvo');return}
  if(SY.meta.rev===0&&!temConteudo(S)){syncDefinir('vazio');return}            // nunca cria um registro vazio
  if(str.length>SYNC_CFG.limite){syncDefinir('grande','Os dados (principalmente imagens) passam do limite da nuvem.');return}
@@ -105,9 +132,9 @@ async function syncEnviar(){if(!SY.user||!SY.cli||SY.voando)return;clearTimeout(
  try{const{data,error}=await SY.cli.rpc('sodual_sync_put',{p_data:JSON.parse(str),p_expected_revision:SY.meta.rev,p_schema_version:VER,p_device:syncDispositivo()});
   if(tok!==SY.tok)return;if(error)throw error;
   if(data&&data.ok){SY.meta=Object.assign({},SY.meta,{rev:+data.revision,hash:h,at:data.updated_at||new Date().toISOString()});syncGravarMeta();SY.tent=0;
-   if(syncHash(syncStr(S))!==h){syncDefinir('pendente');syncAgendar(SYNC_CFG.debounce)}else syncDefinir('salvo')}
+   if(syncHash(syncCargaStr(S))!==h){syncDefinir('pendente');syncAgendar(SYNC_CFG.debounce)}else syncDefinir('salvo')}
   else if(data&&data.conflict){let rem=null;try{rem=await syncBuscar()}catch(x){}if(tok!==SY.tok)return;
-   if(rem&&syncHash(syncStr(rem.data))===h){SY.meta=Object.assign({},SY.meta,{rev:+rem.revision,hash:h,at:rem.updated_at});syncGravarMeta();syncDefinir('salvo')} // outra aba já gravou o mesmo
+   if(rem&&syncHash(syncCargaStr(rem.data))===h){SY.meta=Object.assign({},SY.meta,{rev:+rem.revision,hash:h,at:rem.updated_at});syncGravarMeta();syncDefinir('salvo')} // outra aba já gravou o mesmo
    else{SY.conflito={tipo:rem?'conflito':'remoto-apagado',remoto:rem?{revision:+rem.revision,updated_at:rem.updated_at,updated_by_device:rem.updated_by_device}:null};syncDefinir('conflito')}}
   else throw Object.assign(new Error('Resposta inesperada da nuvem'),{code:'resp'})}
  catch(err){if(tok===SY.tok)syncFalha(err)}
@@ -141,7 +168,7 @@ function syncEncerrar(){SY.tok++;clearTimeout(SY.timer);Object.assign(SY,{user:n
 async function syncVerificar(){if(!SY.user||SY.voando)return;const e=SY.estado;if(e!='salvo'&&e!='pendente'&&e!='offline')return;
  if(e=='offline')return syncAgora();const tok=SY.tok;let rem;try{rem=await syncBuscar('revision,updated_at')}catch(x){return}
  if(tok!==SY.tok||!rem||+rem.revision===SY.meta.rev)return;
- const local=syncHash(syncStr(S))!==SY.meta.hash;if(local){syncEnviar();return}                   // o envio vai detectar o conflito
+ const local=syncHash(syncCargaStr(S))!==SY.meta.hash;if(local){syncEnviar();return}                   // o envio vai detectar o conflito
  try{const full=await syncBuscar();if(tok===SY.tok&&full){syncAdotar(full);syncDefinir('salvo');if(typeof toast=='function')toast('Dados atualizados com a versão da nuvem','ok')}}catch(x){}}
 
 /* ===== Entrega 3 — resolução explícita de conflitos e exclusão da nuvem =====
@@ -174,14 +201,14 @@ async function syncManterNuvem(){if(!SY.user)return{ok:false,motivo:'sem-sessao'
 /* "Manter versão deste dispositivo": grava este estado SOBRE a revisão que o jogador viu (revVista; 0 = nuvem vazia).
    Se a nuvem mudou depois disso, devolve conflito de novo (a interface mostra os dados novos e pede outra confirmação). */
 async function syncManterDispositivo(revVista){if(!SY.user)return{ok:false,motivo:'sem-sessao'};if(SY.voando)return{ok:false,motivo:'ocupado'};
- const tok=SY.tok,str=syncStr(S),h=syncHash(str);revVista=Math.max(0,+revVista||0);
+ const tok=SY.tok,str=syncCargaStr(S),h=syncHash(str);revVista=Math.max(0,+revVista||0);
  if(str.length>SYNC_CFG.limite)return{ok:false,motivo:'grande'};
  if(SY.remDados)syncGuardarCopia('.nuvem-substituida',SY.remDados,{revision:revVista});
  SY.voando=true;clearTimeout(SY.timer);syncDefinir('salvando');
  try{const{data,error}=await SY.cli.rpc('sodual_sync_put',{p_data:JSON.parse(str),p_expected_revision:revVista,p_schema_version:VER,p_device:syncDispositivo()});
   if(tok!==SY.tok)return{ok:false,motivo:'descartado'};if(error)throw error;
   if(data&&data.ok){SY.meta=Object.assign({},SY.meta,{rev:+data.revision,hash:h,at:data.updated_at||new Date().toISOString()});syncGravarMeta();SY.conflito=null;SY.remDados=null;SY.tent=0;
-   if(syncHash(syncStr(S))!==h){syncDefinir('pendente');syncAgendar(SYNC_CFG.debounce)}else syncDefinir('salvo');return{ok:true,revision:+data.revision}}
+   if(syncHash(syncCargaStr(S))!==h){syncDefinir('pendente');syncAgendar(SYNC_CFG.debounce)}else syncDefinir('salvo');return{ok:true,revision:+data.revision}}
   SY.conflito={tipo:data&&data.revision?'conflito':'remoto-apagado',remoto:data&&data.revision?{revision:+data.revision,updated_at:data.updated_at,updated_by_device:data.updated_by_device}:null};
   syncDefinir('conflito');return{ok:false,motivo:'conflito',revision:data?+data.revision:0}}
  catch(e){if(tok===SY.tok)syncDefinir('conflito',syncTipoErro(e)=='rede'?'Sem conexão: tente de novo quando a internet voltar.':String(e&&e.message||'Falha'));return{ok:false,motivo:syncTipoErro(e),erro:e}}

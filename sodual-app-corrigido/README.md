@@ -56,6 +56,39 @@ Não desligue esses limites: eles protegem a conta dos jogadores contra força b
 - **Favicon:** `favicon.ico` na raiz (16 a 256 px, fundo transparente), referenciado em `index.html` como `favicon.ico?v=3`. Ao trocar o arquivo, aumente o `?v=` para furar o cache. O `vercel.json` manda revalidar `/favicon.ico`, e o `sodual-single.html` leva o ícone embutido.
 - **Aparência:** tema e cor de destaque ficam em Configurações › Aparência (valores em `S.set.theme` e `S.set.ac`, aplicados na hora por `applySet`).
 
+## Salvamento na nuvem — Entrega 5 (imagens no Storage privado)
+**Como funciona** (`src/imagens-nuvem.js`, `syncCargaStr` em `src/sync.js`)
+- Imagens do jogador: foto de perfil (`S.set.img`/`imgSrc`), retrato (`chars[].img`/`imgSrc`) e fotos da rede (`net.people[].img`).
+- Ficam no bucket **privado** `sodual-images`, em `<uid>/profile/avatar/<sha>.jpg`, `<uid>/characters/<id>/<sha>.jpg` e `<uid>/network/<id>/<sha>.jpg`. O nome do arquivo é o SHA-256 do conteúdo: seguro, único e sem sobrescrita.
+- **Neste dispositivo** a imagem continua em base64 (cache local). O app funciona offline, e o editor de enquadramento e o `imgCrop` não mudaram.
+- **Envio**, em segundo plano e só com a sincronização ativa (nunca em "migrar", "só neste dispositivo" ou conflito):
+  1. Valida formato (JPEG, PNG ou WebP) e tamanho (≤ 1 MB).
+  2. Envia sem sobrescrever.
+  3. Só depois da confirmação do Storage grava a referência `imgRef`/`imgSrcRef = {p: caminho, h: impressão}`.
+  4. Só a partir daí o JSON da nuvem leva a referência no lugar do base64.
+- **Falha no envio:** nada se perde. A imagem local fica intacta, o JSON continua com o base64 (como antes da Entrega 5), a pendência aparece em Configurações › Sincronização › Imagens e há novas tentativas automáticas e o botão "Tentar novamente".
+- **Outro dispositivo:** recebe o JSON com referências, pede uma **URL assinada** (1 h, só em memória, renovada quando vence), baixa, confere a impressão e guarda o base64 localmente. Isso não gera pendência nem reenvio.
+- **Segurança das referências:** nunca se grava URL assinada no JSON, só caminhos. Uma referência só vale se o caminho estiver na pasta da conta atual e a impressão bater com a imagem local. Uma referência de outra conta (ex.: backup alheio) é descartada, e o base64 local é enviado.
+- **Imagens antigas** (base64 de antes da Entrega 5) migram sozinhas depois que a conta sincroniza, sem apagar nada antes da confirmação.
+- **Backup portátil:** "Exportar backup", as cópias guardadas e a tela de conflito exportam com todas as imagens em base64 (do cache ou baixadas na hora) e **sem** caminhos privados. Se alguma imagem não puder ser baixada (sem conexão), o aviso diz quantas ficaram de fora.
+
+**Configuração manual (Supabase)**
+1. Rode `supabase/migrations/002_images_storage.sql` no SQL Editor. Ele cria ou corrige o bucket privado (1 MB, JPEG/PNG/WebP) e as 4 políticas em `storage.objects`. Pode ser rodado de novo e não apaga nada.
+2. Rode `supabase/tests/002_images_storage_test.sql`. O esperado é "SODUAL: TODAS AS VERIFICAÇÕES DO STORAGE PASSARAM". Ele termina em `ROLLBACK`.
+3. Em *Storage*, confira que `sodual-images` aparece **sem** o selo "Public".
+4. Teste local do SQL (opcional, sem Supabase): `node supabase/tests/run_local.mjs .` com `PGLITE_DIR` (ver o arquivo). Valida as migrações 001 e 002, a idempotência e se o teste apanha sabotagens.
+
+**Como testar com o app**
+- **Upload:** entre, troque a foto de perfil e espere "Todas as imagens estão na nuvem" em Configurações › Sincronização. No painel, *Storage › sodual-images › <seu uid>* mostra o arquivo.
+- **Recuperação:** abra a mesma conta em outro navegador ou janela anônima. A foto aparece depois de baixada.
+- **Isolamento:** com outra conta, as imagens da primeira não aparecem. Uma URL assinada copiada de um navegador expira em 1 h.
+- **Falha:** com o DevTools em *Offline*, troque a foto. "Imagens: 1 aguardando envio", a foto continua na tela e volta a subir quando a conexão volta.
+
+**Limitações conhecidas**
+- Imagens substituídas ou removidas continuam no Storage (não há limpeza automática). Apagar arquivos que outro dispositivo ou uma cópia guardada ainda usam quebraria essas referências. Uma limpeza segura de órfãos fica para uma entrega futura.
+- "Excluir dados da nuvem" apaga só o JSON. As imagens ficam no Storage da conta até essa limpeza existir.
+- O envio exige `crypto.subtle`, que os navegadores só oferecem em contexto seguro (HTTPS ou localhost). Sem ele, a seção Imagens avisa, e as imagens continuam no JSON como antes.
+
 ## Salvamento na nuvem — Entrega 4 (interface)
 - **Indicador:**
   - Estados: "Salvo na nuvem" (só após a confirmação do servidor), "Salvando…", "Salvo neste dispositivo", "Só neste dispositivo", "Conflito detectado" e "Falha na sincronização".
@@ -168,8 +201,8 @@ Aplicada e verificada no projeto: tabela, RLS e RPCs abaixo.
 ## Imagens (perfil e personagem)
 - Ao escolher uma foto abre o editor de enquadramento (`src/imagem.js`), que permite arrastar, pinçar, usar a roda do mouse, o controle de zoom e o teclado. O recorte nunca deixa área vazia. **Salvar enquadramento** é o único momento em que a imagem anterior é substituída. **Cancelar** não altera nada.
 - Proporção usada: a do espaço real. Hoje os dois espaços (`.uav` no perfil, `.sh-av .av` na ficha) são círculos 1:1 (`IMG_CFG`).
-- Armazenamento: continua no `localStorage` da conta. `img` é o recorte pronto (JPEG de até ~90 KB, usado por todas as telas como antes). `imgSrc` é a original reduzida (lado ≤ 1280 px, até ~240 KB), para reajustar depois. `imgCrop` = `{x, y, z}`. Se faltar espaço, só o recorte é salvo. Fotos antigas (só `img`) podem ser reajustadas a partir do próprio recorte.
-- **Futuro Supabase Storage:** crie um bucket **privado** (ex.: `avatars`) com políticas RLS que limitem leitura e escrita ao dono (`auth.uid()` no caminho `uid/arquivo`), envie o recorte e a original pelo supabase-js com a sessão do usuário, guarde só os caminhos e o `imgCrop` na ficha e exiba com URLs assinadas. Não use bucket público nem chave de serviço no front-end.
+- Armazenamento local: `localStorage` da conta. `img` é o recorte pronto (JPEG de até ~90 KB, usado por todas as telas como antes). `imgSrc` é a original reduzida (lado ≤ 1280 px, até ~240 KB), para reajustar depois. `imgCrop` = `{x, y, z}`. Se faltar espaço, só o recorte é salvo. Fotos antigas (só `img`) podem ser reajustadas a partir do próprio recorte.
+- Na nuvem: Storage privado, ver "Salvamento na nuvem — Entrega 5".
 - **Núcleo:** Preto, Vermelho Escuro, Vermelho Sólido, Vermelho Claro, Laranja Escuro, Laranja Sólido, Laranja Claro, Amarelo Escuro, Amarelo Sólido, Amarelo Claro, Prata Escura, Prata Sólida, Prata Clara, Branco (`NUC`, `setNucleo`). Toda ficha nova começa em Preto (`NUC_INI`); fichas antigas sem estágio continuam como estavam. O antigo "Laranja" é preservado e sinalizado na ficha até o jogador escolher o tom; nunca é convertido automaticamente.
 
 ## Testes

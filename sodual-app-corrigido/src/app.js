@@ -48,8 +48,8 @@ const ConflitoModal=()=>{const s=useSync(),[d,sd]=React.useState(null),[er,se]=R
  React.useEffect(()=>{if(aberto)carregar()},[aberto,s.conflito&&s.conflito.remoto&&s.conflito.remoto.revision]);
  if(!aberto)return null;
  const fechar=()=>{ui.cfAberto=false;ui.cfDispensado=true;scf(null);t()},
-  exportar=()=>{const dia=new Date().toISOString().slice(0,10);baixarJSON('sodual-este-dispositivo-'+dia+'.json',{_meta:{app:'SODUAL',formato:2,origem:'este dispositivo',exportado:new Date().toISOString()},...S});
-   if(d&&d.remoto)setTimeout(()=>baixarJSON('sodual-nuvem-rev'+d.remoto.revision+'-'+dia+'.json',{_meta:{app:'SODUAL',formato:2,origem:'nuvem',revisao:d.remoto.revision,exportado:new Date().toISOString()},...d.remoto.data}),300);toast('Backup exportado','ok')},
+  exportar=async()=>{const dia=new Date().toISOString().slice(0,10),em=new Date().toISOString();await exportarPortatil('sodual-este-dispositivo-'+dia+'.json',{origem:'este dispositivo',exportado:em},S);
+   if(d&&d.remoto){await new Promise(r=>setTimeout(r,300));await exportarPortatil('sodual-nuvem-rev'+d.remoto.revision+'-'+dia+'.json',{origem:'nuvem',revisao:d.remoto.revision,exportado:em},d.remoto.data)}},
   agir=async()=>{sb(true);se('');const r=cf=='nuvem'?await syncManterNuvem():await syncManterDispositivo(d&&d.remoto?d.remoto.revision:0);sb(false);
    if(r.ok){scf(null);ui.cfAberto=false;toast(cf=='nuvem'?'Versão da nuvem aplicada. A versão anterior deste dispositivo ficou guardada.':'Versão deste dispositivo enviada para a nuvem.','ok');return}
    scf(null);if(r.motivo=='conflito'){toast('A nuvem mudou enquanto você decidia. Confira a versão nova.','warn');carregar()}else se(r.motivo=='rede'?'Sem conexão: nada foi alterado. Tente de novo quando a internet voltar.':r.motivo=='sem-nuvem'?'Não há mais dados na nuvem para manter.':'Não foi possível concluir agora. Nada foi alterado.')};
