@@ -30,6 +30,13 @@ Para conferir, no e-mail recebido copie o link e veja o parâmetro `redirect_to=
 
 4. *Emails*: o SMTP embutido do Supabase tem limite baixo de envios por hora e serve só para testes. Para produção, configure SMTP próprio (*Authentication → Emails → SMTP Settings*) e traduza os modelos de **Confirm signup** e **Reset password** (podem continuar usando `{{ .ConfirmationURL }}`).
 
+**"Muitas tentativas" / "limite de envio de e-mails"?** O limite é do servidor, não do app. Há três limites diferentes:
+- **E-mails por hora, somando o projeto inteiro.** Com o SMTP embutido do Supabase, o limite é muito baixo e não pode ser aumentado. Por isso testadores esbarram nele mesmo pedindo poucos e-mails. A solução é configurar SMTP próprio (Resend, Brevo, SendGrid, Amazon SES etc.) em *Authentication → Emails → SMTP Settings* e depois aumentar **Rate limit for sending emails** em *Authentication → Rate Limits*.
+- **Intervalo entre dois e-mails para o mesmo endereço** (padrão de 60 s, em *Authentication → Rate Limits*). O app mostra uma contagem regressiva no botão.
+- **Pedidos por endereço IP** (login, cadastro, verificação) também ficam em *Authentication → Rate Limits*. Testadores na mesma rede compartilham o IP.
+
+Não desligue esses limites: eles protegem a conta dos jogadores contra força bruta e contra spam usando o seu domínio.
+
 ### Fichas e contas
 - Cada conta lê e grava só a sua chave `sodual.v1.u.<id>`. Sem sessão, nada é gravado.
 - As fichas de **antes do login** (chave antiga `sodual.v1`) nunca são apagadas nem alteradas. No primeiro acesso de uma conta sem fichas, o app oferece **copiá-las** para essa conta (também disponível em Configurações). Depois da cópia, a oferta some para as demais contas do navegador (`sodual.v1.dono`), evitando que um segundo jogador veja as fichas do primeiro. Quem recusa recebe a oferta de novo em Configurações.

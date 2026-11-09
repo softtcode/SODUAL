@@ -2151,13 +2151,18 @@ const okMail=e=>/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e);
 const PRUL=[[`Pelo menos ${PMIN} caracteres`,p=>p.length>=PMIN],['No máximo 72 caracteres',p=>p.length<=72,1]].concat(
  PREQ=='letters_digits'?[['Letras e números',p=>/[a-zA-Z]/.test(p)&&/\d/.test(p)]]:/^lower_upper/.test(PREQ)?[['Letras minúsculas e maiúsculas',p=>/[a-z]/.test(p)&&/[A-Z]/.test(p)],['Pelo menos um número',p=>/\d/.test(p)]]:[],
  PREQ=='lower_upper_letters_digits_symbols'?[['Pelo menos um símbolo (!@#…)',p=>/[^A-Za-z0-9]/.test(p)]]:[]);
+/* Espera exigida pelo Supabase entre dois e-mails para o mesmo endereço ("...you can only request this after 42 seconds"). 0 = não informada. */
+const ESPERA=e=>{const x=/after (\d+) seconds?/i.exec(String((e&&e.message)||''));return x?Math.min(3600,+x[1]):0};
 const AERR=e=>{if(!e)return'';const c=e.code||'',s=e.status,m=String(e.message||'').toLowerCase();
  if(e.name=='AuthRetryableFetchError'||s===0||/failed to fetch|network|load failed/.test(m))return'Sem conexão com o servidor. Verifique a internet e tente de novo.';
  if(c=='invalid_credentials'||/invalid login credentials/.test(m))return'E-mail ou senha incorretos.';
  if(c=='email_not_confirmed'||/email not confirmed/.test(m))return'Confirme seu e-mail antes de entrar. Procure a mensagem na caixa de entrada (e no spam).';
  if(c=='same_password'||/different from the old/.test(m))return'A nova senha precisa ser diferente da atual.';
  if(c=='weak_password'||(!c&&/password should (be at least|contain)/.test(m))){const r=e.reasons||[];return'Senha fraca'+(r.length?': '+r.map(x=>({length:`use pelo menos ${PMIN} caracteres`,characters:'misture os tipos de caractere pedidos',pwned:'essa senha apareceu em vazamentos conhecidos'})[x]||x).join('; '):'')+'.'}
- if(/rate_limit/.test(c)||s==429)return'Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente de novo.';
+ if(/rate_limit/.test(c)||s==429){const w=ESPERA(e);
+  if(w)return`Por segurança, só é possível pedir outro e-mail daqui a ${w} segundos.`;
+  if(c=='over_email_send_rate_limit'||/email rate limit/.test(m))return'O limite de envio de e-mails do servidor foi atingido. Tente de novo mais tarde; se o problema continuar, avise o administrador do site.';
+  return'Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente de novo.'}
  if(c=='email_address_invalid')return'Este endereço de e-mail não é aceito.';
  if(c=='signup_disabled')return'Novos cadastros estão desativados no momento.';
  if(c=='user_already_exists'||c=='email_exists')return'Não foi possível criar a conta com este e-mail. Se você já tem conta, entre ou recupere a senha.';
@@ -2192,7 +2197,7 @@ const Auth=({start,note})=>{const L=lastAcc(),[m,sm]=React.useState(start||(L?'l
  React.useEffect(()=>{if(first.current){first.current=false;return}hr.current&&hr.current.focus({preventScroll:true});try{scrollTo(0,0)}catch(e){}},[m]);
  React.useEffect(()=>{if(cd<=0)return;const t=setTimeout(()=>scd(cd-1),1000);return()=>clearTimeout(t)},[cd]);
  const to=(x,keep)=>{ser({});if(!keep)smsg(null);sp('');sp2('');ssh(false);sm(x)},
-  run=async f=>{if(busy)return;sb(true);smsg(null);try{await f()}catch(e){console.warn('[SODUAL] auth',e);smsg({t:AERR(e),bad:1})}finally{sb(false)}},
+  run=async f=>{if(busy)return;sb(true);smsg(null);try{await f()}catch(e){console.warn('[SODUAL] auth',e);smsg({t:AERR(e),bad:1});const w=ESPERA(e);if(w)scd(w)}finally{sb(false)}},
   img=last&&(()=>{try{return(JSON.parse(lsG(ukey(last.id)))||{}).set.img||''}catch(e){return''}})(),
   vMail=e=>!e.trim()?'Informe seu e-mail.':!okMail(e.trim())?'Esse e-mail não parece válido. Confira o formato (nome@exemplo.com).':'',
   vNew=()=>{const o={},bad=PRUL.find(([,f])=>!f(pw));if(!pw)o.pw='Crie uma senha.';else if(bad)o.pw='A senha ainda não atende: '+bad[0].toLowerCase()+'.';if(!p2)o.p2='Repita a senha para confirmar.';else if(pw&&p2!==pw)o.p2='As senhas não coincidem.';return o},
@@ -2211,7 +2216,7 @@ const Auth=({start,note})=>{const L=lastAcc(),[m,sm]=React.useState(start||(L?'l
   forget=()=>run(async()=>{const{data}=await SBC.auth.getSession();if(data&&data.session){const{error}=await SBC.auth.signOut({scope:'local'});if(error)throw error}lsD(LAST);sl(null);se('');to('login',1);smsg({t:'Conta esquecida neste navegador. A conta e os dados dela não foram apagados.'})});
  /* Funções que devolvem marcação (não componentes): evitam remontar botões e títulos a cada tecla. */
  const Msg=()=>msg&&h`<p class=${'au-msg'+(msg.bad?' bad':' ok')} role=${msg.bad?'alert':'status'}><${I} n=${msg.bad?'x':'check'} s=${16}/><span>${msg.t}</span></p>`,
-  Btn=({t,bt})=>h`<button class="b p au-btn" type="submit" disabled=${busy} aria-busy=${busy?'true':undefined}>${busy?h`<span class="au-sp" aria-hidden="true"></span>${bt}`:t}</button>`,
+  Btn=({t,bt,w})=>h`<button class="b p au-btn" type="submit" disabled=${busy||(w&&cd>0)} aria-busy=${busy?'true':undefined}>${busy?h`<span class="au-sp" aria-hidden="true"></span>${bt}`:w&&cd>0?`Tente de novo em ${cd}s`:t}</button>`,
   H=({t,s})=>h`<h1 class="au-t" tabIndex="-1" ref=${hr}>${t}</h1>${s&&h`<p class="au-s">${s}</p>`}`,
   eye={pw:true,show:sh,tog:()=>ssh(!sh)};
  let body;
@@ -2243,7 +2248,7 @@ const Auth=({start,note})=>{const L=lastAcc(),[m,sm]=React.useState(start||(L?'l
   <button class="b p au-btn" onClick=${()=>to(last?'last':'login')}>Voltar para o login</button>`;
  else if(m=='forgot')body=h`${H({t:'Recuperar senha',s:'Informe o e-mail da conta. Enviaremos um link para criar uma nova senha.'})}${Msg()}
   <form onSubmit=${forgot} noValidate><${AFld} id="au-em" l="E-mail" type="email" inputMode="email" autoComplete="username" autoCapitalize="none" spellCheck="false" v=${em} set=${se} err=${err.em}/>
-  ${Btn({t:'Enviar link',bt:'Enviando…'})}</form>
+  ${Btn({t:'Enviar link',bt:'Enviando…',w:1})}</form>
   <p class="au-sw"><button class="au-lk" onClick=${()=>to(last?'last':'login')}>Voltar para o login</button></p>`;
  else if(m=='sent')body=h`<div class="au-ic" aria-hidden="true"><${I} n="mail" s=${30}/></div>${H({t:'Verifique seu e-mail',s:h`Se existir uma conta com <b>${maskMail(em)}</b>, você receberá um link para definir uma nova senha.`})}${Msg()}
   <p class="au-fine">O link vale por tempo limitado e só pode ser usado uma vez. Não chegou? Veja o spam.</p>
