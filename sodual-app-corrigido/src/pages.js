@@ -45,8 +45,27 @@ const ExcluirNuvem=({exp})=>{const s=useSync(),[ab,sab]=React.useState(false),[t
 /* Imagens no Storage privado (Entrega 5): pendências de envio/recebimento e "Tentar novamente". Re-renderiza com useSync. */
 const ImgSync=()=>{useSync();if(typeof imgnStatus!='function')return null;const m=imgnStatus();if(!m.ativo)return null;
  const txt=m.rodando?'Sincronizando imagens…':m.enviar||m.baixar?[m.enviar&&m.enviar+' aguardando envio',m.baixar&&m.baixar+' para baixar'].filter(Boolean).join(' · ')+(m.erro?' — '+m.erro:'.'):'Todas as imagens estão na nuvem (armazenamento privado).';
- return h`<div class="cfg-r"><div><b>Imagens</b><small class=${m.erro?'sy-t sy-warn':''}>${txt}${m.ignoradas&&!m.rodando?h`<br/>${m.ignoradas} imagem(ns) ficaram só neste dispositivo (formato ou tamanho não aceitos, ou arquivo ausente na nuvem).`:''}</small></div>
-  ${(m.enviar||m.baixar)&&!m.rodando?h`<${B} ic="sincro" onClick=${()=>imgnAgora()}>Tentar novamente<//>`:null}</div>`};
+ return h`<div class="cfg-r"><div><b>Imagens</b><small class=${m.erro?'sy-img-av':''}>${txt}${m.ignoradas&&!m.rodando?h`<br/>${m.ignoradas} imagem(ns) ficaram só neste dispositivo (formato ou tamanho não aceitos, ou arquivo ausente na nuvem).`:''}</small></div>
+  ${(m.enviar||m.baixar)&&!m.rodando?h`<${B} ic="sincro" onClick=${()=>imgnAgora()}>Tentar novamente<//>`:null}</div>
+ <${LimparImagens}/>`};
+/* Limpeza segura das imagens antigas: analisa (sem apagar), mostra o resultado e só remove após confirmação. */
+const LIMPA_MOT={pendente:'Há alterações aguardando envio ou um conflito. Sincronize antes de limpar.',imagens:'Há imagens aguardando envio. Espere terminar (ou use “Tentar novamente”).',
+ desatualizado:'A nuvem mudou desde a última sincronização deste dispositivo. Use “Sincronizar agora” e tente de novo.',rede:'Sem conexão: nada foi removido.',auth:'Sessão expirada: entre de novo.',
+ negado:'A nuvem recusou a operação (permissões do Storage).',servidor:'O armazenamento de imagens não está configurado (migração 002).'};
+const LimparImagens=()=>{const s=useSync(),[ab,sab]=React.useState(false),[an,san]=React.useState(null),[busy,sb]=React.useState(false),[er,se]=React.useState('');
+ if(!AU.u||!s.ativo||typeof imgnAnaliseLimpeza!='function')return null;
+ const dias=Math.round(IMGN_CFG.carencia/864e5),mot=r=>LIMPA_MOT[r.motivo]||'Não foi possível concluir agora. Nada foi removido.';
+ const abrir=async()=>{sab(true);san(null);se('');sb(true);const r=await imgnAnaliseLimpeza();sb(false);if(r.ok)san(r);else se(mot(r))},
+  ir=async()=>{sb(true);se('');const r=await imgnLimpar(an.orfaos);sb(false);
+   if(r.ok){sab(false);toast(r.removidos?`${r.removidos} imagem(ns) antiga(s) removida(s) — ${fmtB(r.bytes)} liberados.`:'Nada a remover: as imagens voltaram a ser usadas.','ok')}
+   else se((r.removidos?`${r.removidos} removida(s) antes da falha. `:'')+mot(r))};
+ return h`<div class="cfg-r"><div><b>Imagens antigas</b><small>Fotos substituídas continuam guardadas na nuvem. A limpeza remove só as que nenhuma ficha, cópia guardada ou versão da nuvem usa, e que têm mais de ${dias} dias.</small></div><${B} ic="trash" disabled=${s.estado!='salvo'} onClick=${abrir}>Limpar imagens antigas<//></div>
+ ${ab&&h`<${Modal} t="Limpar imagens antigas" onClose=${()=>!busy&&sab(false)}>
+  ${!an&&!er&&h`<p role="status">Conferindo as imagens da sua conta…</p>`}
+  ${an&&h`<p>Sua pasta na nuvem tem <b>${an.total}</b> imagem(ns): <b>${an.emUso}</b> em uso${an.recentes?h`, <b>${an.recentes}</b> sem uso mas com menos de ${dias} dias (ficam, por segurança)`:''} e <b>${an.orfaos.length}</b> antiga(s) sem uso${an.orfaos.length?' ('+fmtB(an.bytes)+')':''}.</p>
+   ${an.orfaos.length?h`<div class="note">Serão removidas só as imagens antigas que nada usa. As fichas, o perfil e as cópias guardadas não mudam. <b>A remoção não pode ser desfeita</b>; um backup exportado guarda as imagens em uso.</div>`:h`<div class="note">Não há nada para remover agora.</div>`}`}
+  ${er&&h`<div class="er" role="alert">${er}</div>`}
+  <div class="row">${an&&an.orfaos.length?h`<${B} p ic="trash" disabled=${busy} onClick=${ir}>${busy?'Removendo…':`Remover ${an.orfaos.length} imagem(ns)`}<//>`:null}<${B} disabled=${busy} onClick=${()=>sab(false)}>${an&&!an.orfaos.length?'Fechar':'Cancelar'}<//></div><//>`}`};
 /* Configurações › Sincronização (Entrega 2: estado, última sincronia confirmada, pendências, ações básicas). */
 const dataHora=t=>{try{return t?new Date(t).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'—'}catch(e){return'—'}};
 const SyncSec=({exp})=>{const s=useSync();if(!AU.u)return null;const u=SYNC_UI[s.estado]||['Desligada','nuvemOff','loc'],cf=s.conflito;

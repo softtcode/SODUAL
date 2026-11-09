@@ -659,6 +659,7 @@ img.avm-f{object-fit:contain}
 .bn-dot{position:absolute;top:7px;right:calc(50% - 16px);width:9px;height:9px;border-radius:50%;background:#c9cffa;box-shadow:0 0 0 2px #0b1030}
 .bn-dot.sy-warn{background:#e2a13a}.bn-dot.sy-err{background:#e0525c}.bn-dot.sy-loc{background:#8f97d6}
 .sy-t{display:inline-flex!important;align-items:center;gap:6px}.cfg-sy .sy-t.sy-ok{color:var(--ok)}.cfg-sy .sy-t.sy-warn{color:var(--warn)}.cfg-sy .sy-t.sy-err{color:var(--err)}
+.cfg-sy .sy-img-av{color:var(--warn)}
 .cfg .cfg-sy{border-color:color-mix(in srgb,var(--cy) 34%,var(--line))}.cfg-sy .note .row{margin-top:10px}
 
 /* ---------- Conflito de sincronização e cópias guardadas ---------- */

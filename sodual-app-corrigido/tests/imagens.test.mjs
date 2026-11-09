@@ -45,7 +45,21 @@ class Servidor {
             try { await s._rede(true); } catch (e) { return { data: null, error: { name: 'StorageUnknownError', message: e.message } }; }
             if (b !== 'sodual-images' || !dono(p)) { s.negados++; return { data: null, error: { message: 'new row violates row-level security policy', statusCode: '403' } }; }
             if (s.arquivos.has(p) && !o.upsert) return { data: null, error: { message: 'The resource already exists', statusCode: '409' } };
-            s.uploads++; s.arquivos.set(p, { bytes: Buffer.from(await blob.arrayBuffer()), type: o.contentType }); return { data: { path: p }, error: null };
+            s.uploads++; s.arquivos.set(p, { bytes: Buffer.from(await blob.arrayBuffer()), type: o.contentType, criado: Date.now() }); return { data: { path: p }, error: null };
+          },
+          async list(pre, o) {
+            try { await s._rede(true); } catch (e) { return { data: null, error: { name: 'StorageUnknownError', message: e.message } }; }
+            if (!dono(pre + '/')) { s.negados++; return { data: [], error: null }; }       // RLS: pasta alheia aparece vazia
+            const filhos = new Map();
+            for (const [k, f] of s.arquivos) { if (!k.startsWith(pre + '/')) continue; const resto = k.slice(pre.length + 1), i = resto.indexOf('/');
+              if (i < 0) filhos.set(resto, { name: resto, id: 'id-' + resto, created_at: new Date(f.criado).toISOString(), metadata: { size: f.bytes.length } });
+              else filhos.set(resto.slice(0, i), { name: resto.slice(0, i), id: null }); }
+            const l = [...filhos.values()].sort((a, b) => a.name < b.name ? -1 : 1); return { data: l.slice(o.offset || 0, (o.offset || 0) + (o.limit || 100)), error: null };
+          },
+          async remove(ps) {
+            try { await s._rede(true); } catch (e) { return { data: null, error: { name: 'StorageUnknownError', message: e.message } }; }
+            const ok = ps.filter(p => dono(p) && s.arquivos.has(p)); if (ps.some(p => !dono(p))) s.negados++;
+            ok.forEach(p => s.arquivos.delete(p)); s.removidos = (s.removidos || 0) + ok.length; return { data: ok.map(name => ({ name })), error: null };
           },
           async createSignedUrl(p, seg) {
             try { await s._rede(true); } catch (e) { return { data: null, error: { name: 'StorageUnknownError', message: e.message } }; }
@@ -143,7 +157,7 @@ test('19. recuperação: outro dispositivo baixa por URL assinada, confere e gua
 test('URL assinada expirada é renovada; arquivo ausente não trava a fila', async () => {
   const srv = new Servidor(), a = dispositivo(srv, comImagens(U));
   await a.entrar(U); a.run('syncMigrar()');
-  assert.ok(await ate(() => tudoNaNuvem(a) && srv.linhas.get(U).data.set.imgRef));
+  assert.ok(await ate(() => tudoNaNuvem(a) && !JSON.stringify(srv.linhas.get(U).data).includes('base64') && a.run('IMGN.vist.size') === 5)); a.run('syncEncerrar()');
   const b = dispositivo(srv);
   b.run(`IMGN_CFG.espera=100000`);                                                // segura a rodada automática
   await b.entrar(U);
@@ -200,12 +214,14 @@ test('backup portátil: imagens em base64 (do cache ou baixadas agora) e sem cam
   b.run('syncEncerrar()');
 });
 
-test('formato não aceito (SVG) não é enviado ao Storage nem vira referência', async () => {
+test('formato não aceito (SVG) não é enviado ao Storage nem vira referência; data URL válido acima de 1 MB fica só no JSON', async () => {
+  const GRANDE = 'data:image/jpeg;base64,' + Buffer.alloc(1100000, 7).toString('base64');
   const srv = new Servidor(), svg = 'data:image/svg+xml;base64,' + Buffer.from('<svg/>').toString('base64');
-  const d = dispositivo(srv, { [`sodual.v1.u.${U}`]: JSON.stringify({ v: 3, chars: [{ id: 'c1', nome: 'Lia', a: {}, w: {}, img: svg }], net: { pos: {}, edges: [], people: [] }, set: { nome: 'J' } }) });
+  const d = dispositivo(srv, { [`sodual.v1.u.${U}`]: JSON.stringify({ v: 3, chars: [{ id: 'c1', nome: 'Lia', a: {}, w: {}, img: svg }], net: { pos: {}, edges: [], people: [{ id: 'p1', nome: 'X', cor: '#ffffff', img: GRANDE }] }, set: { nome: 'J' } }) });
   await d.entrar(U); d.run('syncMigrar()');
   assert.ok(await ate(() => d.estado === 'salvo')); await espera(60);
-  assert.equal(srv.uploads, 0); assert.equal(srv.linhas.get(U).data.chars[0].img, svg, 'continua como antes, no JSON');
+  assert.equal(srv.uploads, 0); assert.equal(srv.linhas.get(U).data.chars[0].img, '', 'SVG (nunca gerado pelo app) é descartado na normalização e não vai a lugar nenhum');
+  assert.equal(srv.linhas.get(U).data.net.people[0].img, GRANDE, 'acima de 1 MB: fica no JSON, nunca vira referência'); assert.equal(d.st().enviar, 0); assert.equal(d.st().ignoradas, 1);
 });
 
 test('troca de conta durante o envio: a resposta atrasada não grava referência na conta nova', async () => {
@@ -216,4 +232,72 @@ test('troca de conta durante o envio: a resposta atrasada não grava referência
   await espera(80);
   assert.ok(!JSON.stringify(d.S).includes('Ref'), 'nenhuma referência de U entrou na conta V');
   assert.ok(!d.mem[`sodual.v1.u.${V}`].includes(U));
+});
+
+/* ======================================================================================== limpeza segura */
+const DIA = 864e5;
+async function contaPronta(srv) { const d = dispositivo(srv, comImagens(U)); await d.entrar(U); d.run('syncMigrar()');
+  assert.ok(await ate(() => tudoNaNuvem(d) && !JSON.stringify(srv.linhas.get(U).data).includes('base64') && d.run('IMGN.vist.size') === 5)); return d; }
+const envelhecer = (srv, dias) => { for (const f of srv.arquivos.values()) f.criado -= dias * DIA; };
+
+test('limpeza: remove só imagens antigas sem uso; mantém as em uso, as recentes e as de cópias guardadas', async () => {
+  const srv = new Servidor(), d = await contaPronta(srv);
+  const A2 = img('avatar-2'), A3 = img('avatar-3');
+  d.run(`S.set.img=${JSON.stringify(A2)};save()`);                         // A1 vira órfã
+  assert.ok(await ate(() => tudoNaNuvem(d) && srv.linhas.get(U).data.set.imgRef && srv.arquivos.size === 6));
+  const p2 = srv.linhas.get(U).data.set.imgRef.p;
+  envelhecer(srv, 40);                                                      // tudo com 40 dias
+  d.run(`S.set.img=${JSON.stringify(A3)};save()`);                          // A2 vira órfã; A3 é recente
+  assert.ok(await ate(() => tudoNaNuvem(d) && srv.linhas.get(U).data.set.imgRef.p !== p2 && srv.arquivos.size === 7));
+  // uma cópia guardada ainda usa A1 → não pode sumir
+  const a1 = [...srv.arquivos.keys()].find(k => k.includes('/profile/avatar/') && srv.arquivos.get(k).bytes.toString().includes('IMG:avatar:'));
+  d.run(`localStorage.setItem(LS+'.antes-nuvem',JSON.stringify({salvo:'x',dados:{chars:[],set:{img:'',imgRef:{p:${JSON.stringify(a1)},h:'x'}}}}))`);
+  const an = j(await d.run('imgnAnaliseLimpeza()'));
+  assert.equal(an.ok, true); assert.equal(an.total, 7);
+  assert.deepEqual(an.orfaos.map(x => x.p), [p2], 'só A2: antiga e sem uso');
+  assert.equal(an.recentes, 0, 'A3 está em uso; nenhuma órfã recente');
+  const r = j(await d.run(`imgnLimpar(${JSON.stringify(an.orfaos)})`));
+  assert.equal(r.ok, true); assert.equal(r.removidos, 1);
+  assert.ok(!srv.arquivos.has(p2)); assert.ok(srv.arquivos.has(a1)); assert.equal(srv.arquivos.size, 6);
+  assert.equal(srv.negados, 0);
+});
+
+test('limpeza: órfã recente (menos de 30 dias) fica; recusa com pendência, conflito ou nuvem mais nova', async () => {
+  const srv = new Servidor(), d = await contaPronta(srv);
+  d.run(`S.set.img=${JSON.stringify(img('novo'))};save()`);
+  assert.ok(await ate(() => tudoNaNuvem(d) && srv.arquivos.size === 6));
+  let an = j(await d.run('imgnAnaliseLimpeza()'));
+  assert.equal(an.orfaos.length, 0); assert.equal(an.recentes, 1);
+  srv.offline = true; d.run(`S.chars[0].mana=1;save()`);
+  assert.ok(await ate(() => d.estado === 'offline'));
+  assert.equal(j(await d.run('imgnAnaliseLimpeza()')).motivo, 'pendente');
+  srv.offline = false; d.run('syncAgora()'); assert.ok(await ate(() => d.estado === 'salvo'));
+  srv.linhas.get(U).revision += 1;                                          // outro dispositivo gravou
+  assert.equal(j(await d.run('imgnAnaliseLimpeza()')).motivo, 'desatualizado');
+});
+
+test('limpeza: lista confirmada é reconferida na hora; arquivo que voltou a ser usado não é apagado', async () => {
+  const srv = new Servidor(), d = await contaPronta(srv);
+  d.run(`S.set.img=${JSON.stringify(img('outra'))};save()`);
+  assert.ok(await ate(() => tudoNaNuvem(d) && srv.arquivos.size === 6));
+  envelhecer(srv, 40);
+  const an = j(await d.run('imgnAnaliseLimpeza()')); assert.equal(an.orfaos.length, 1);
+  d.run(`S.set.img=${JSON.stringify(A1)};save()`);                          // o jogador volta à foto antiga antes de confirmar
+  assert.ok(await ate(() => tudoNaNuvem(d) && srv.linhas.get(U).data.set.imgRef.p === an.orfaos[0].p));
+  const r = j(await d.run(`imgnLimpar(${JSON.stringify(an.orfaos)})`));
+  assert.equal(r.removidos, 0); assert.ok(srv.arquivos.has(an.orfaos[0].p));
+  assert.equal(j(await d.run(`imgnLimpar([${JSON.stringify(V + '/profile/avatar/x.jpg')}])`)).removidos, 0, 'nunca fora da própria pasta');
+});
+
+test('autocorreção: dispositivo desatualizado com referência para arquivo removido reenvia a imagem que tem', async () => {
+  const srv = new Servidor(), a = await contaPronta(srv);
+  a.run('syncEncerrar()');
+  const b = dispositivo(srv, j(a.mem)); b.run('IMGN_CFG.espera=10');
+  const p = srv.linhas.get(U).data.chars[0].imgRef.p;
+  srv.arquivos.delete(p);                                                   // removido por uma limpeza
+  await b.entrar(U);
+  assert.ok(await ate(() => srv.arquivos.has(p) && b.estado === 'salvo' && b.run('IMGN.vist.size') >= 5), 'mesmo conteúdo, mesmo caminho');
+  assert.equal(b.S.chars[0].imgRef.p, p); assert.equal(b.S.chars[0].img, R1);
+  const c = dispositivo(srv); await c.entrar(U);
+  assert.ok(await ate(() => c.S.chars[0].img === R1), 'outros dispositivos voltam a receber a imagem');
 });

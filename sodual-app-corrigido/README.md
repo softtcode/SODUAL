@@ -56,6 +56,36 @@ Não desligue esses limites: eles protegem a conta dos jogadores contra força b
 - **Favicon:** `favicon.ico` na raiz (16 a 256 px, fundo transparente), referenciado em `index.html` como `favicon.ico?v=3`. Ao trocar o arquivo, aumente o `?v=` para furar o cache. O `vercel.json` manda revalidar `/favicon.ico`, e o `sodual-single.html` leva o ícone embutido.
 - **Aparência:** tema e cor de destaque ficam em Configurações › Aparência (valores em `S.set.theme` e `S.set.ac`, aplicados na hora por `applySet`).
 
+## Salvamento na nuvem — Entrega 6 (validação final)
+**Validado automaticamente**
+- `node --test "tests/*.test.mjs"` executa 119 testes. Eles cobrem os 25 casos obrigatórios da especificação (sincronização, conflitos, offline, troca de conta, backup, exclusões, imagens e preservação de ferimentos, mana, núcleo, perfil e rede), além do isolamento entre contas no Storage.
+- `node supabase/tests/run_local.mjs .` valida as migrações 001 e 002 em Postgres real (PGlite). Também confere se os testes SQL apanham 9 sabotagens de segurança.
+- No Supabase real: `001_cloud_sync_test.sql` e `002_images_storage_test.sql` passaram. Os dois terminam com a linha `resultado`.
+- Responsividade: com 375, 768 e 1024 px, nenhuma página transborda na horizontal (a Rede é um mapa navegável).
+
+**Revisão de segurança**
+- No navegador só existem a URL e a chave publishable. `gen_config.mjs` recusa chaves secretas, e o `config.js` está no `.gitignore`.
+- Banco: RLS ligado, cliente só com SELECT, escrita apenas pelas RPCs `SECURITY DEFINER` com `search_path=''` e `auth.uid()`. Storage: bucket privado, cada conta só acessa a própria pasta, e anon não tem acesso.
+- Um backup importado de terceiros não executa código:
+  - A História passa por um filtro de lista de permissão: só formatação, sem atributos.
+  - Imagens só são aceitas como data URL de imagem rasterizada, nunca um endereço externo.
+  - Cores só são aceitas em hexadecimal.
+  - O texto e os dados do jogo não são alterados.
+- Cabeçalhos na Vercel (`vercel.json`): `X-Frame-Options`/`frame-ancestors` (bloqueia clickjacking), `nosniff`, `Referrer-Policy` e `Permissions-Policy`.
+- **Não incluído:** uma CSP completa (`script-src`/`connect-src`). Ela exige testar no domínio real com os CDNs, o Supabase e as fontes; uma CSP errada deixa o site em branco.
+
+**Roteiro manual (dois navegadores ou dispositivos, mesma conta)**
+1. **A:** crie ou edite a ficha e espere "Salvo na nuvem". **B:** entre e confira a ficha, os ferimentos, a mana, o núcleo, o perfil, a rede e as fotos.
+2. **Edição em sequência:** edite em A, volte para B. B atualiza sozinho ("Dados atualizados com a versão da nuvem"), sem conflito.
+3. **Conflito:** em B, ative DevTools → Network → *Offline* e edite. Em A, edite e salve. Desligue o *Offline* em B: deve aparecer "Escolha qual versão manter". Exporte as duas versões e escolha uma; a outra fica em Cópias guardadas.
+4. **Offline:** num deles, fique offline, edite e troque uma foto. O indicador mostra "Salvo neste dispositivo" e "Imagens: 1 aguardando envio". Volte online: tudo sobe sem perda.
+5. **Logout com pendência:** offline, edite e saia. Entre de novo, já online: o pendente é enviado.
+6. **Isolamento:** com uma segunda conta, nada da primeira aparece. Uma URL assinada copiada da primeira expira em 1 h.
+7. **Backup:** exporte em B (inclui as fotos), restaure numa conta de teste e confira as fotos.
+8. **Celular:** repita os passos 1, 3 e 4 no navegador do celular.
+
+**Antes do deploy:** commit e push do código; variáveis `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY` na Vercel; o domínio de produção em *Redirect URLs*; as migrações 001 e 002 aplicadas no mesmo projeto que a Vercel usa.
+
 ## Salvamento na nuvem — Entrega 5 (imagens no Storage privado)
 **Como funciona** (`src/imagens-nuvem.js`, `syncCargaStr` em `src/sync.js`)
 - Imagens do jogador: foto de perfil (`S.set.img`/`imgSrc`), retrato (`chars[].img`/`imgSrc`) e fotos da rede (`net.people[].img`).
@@ -84,9 +114,19 @@ Não desligue esses limites: eles protegem a conta dos jogadores contra força b
 - **Isolamento:** com outra conta, as imagens da primeira não aparecem. Uma URL assinada copiada de um navegador expira em 1 h.
 - **Falha:** com o DevTools em *Offline*, troque a foto. "Imagens: 1 aguardando envio", a foto continua na tela e volta a subir quando a conexão volta.
 
+**Limpeza segura de imagens antigas** (Configurações › Sincronização › Imagens antigas; `imgnAnaliseLimpeza`/`imgnLimpar`)
+- Fotos substituídas continuam no Storage até o jogador pedir a limpeza. Nada é apagado automaticamente.
+- Uma imagem só é removida se, ao mesmo tempo:
+  - não for usada pela versão atual da nuvem (relida na hora), por este dispositivo nem por nenhuma cópia guardada neste navegador (antes da nuvem, nuvem substituída, nuvem excluída, desfazer restauração, `.bak`);
+  - tiver mais de **30 dias**. Um arquivo novo pode pertencer a uma ficha que outro aparelho ainda vai enviar.
+- Só roda com tudo sincronizado: estado "Salvo na nuvem", sem imagens aguardando envio e com a nuvem na mesma revisão deste aparelho.
+- Primeiro mostra o resultado (em uso, recentes, antigas sem uso e espaço liberado) e só apaga depois da confirmação. Na hora de apagar, analisa tudo de novo e remove só o que continuar sem uso, sempre dentro da própria pasta.
+- **Autocorreção:** se um aparelho que ficou muito tempo desatualizado tiver uma foto cujo arquivo foi removido, ele percebe (uma conferência por arquivo e por sessão) e reenvia a foto que tem. Os outros aparelhos voltam a recebê-la.
+- Backups exportados não dependem do Storage: levam as imagens dentro do arquivo.
+
 **Limitações conhecidas**
-- Imagens substituídas ou removidas continuam no Storage (não há limpeza automática). Apagar arquivos que outro dispositivo ou uma cópia guardada ainda usam quebraria essas referências. Uma limpeza segura de órfãos fica para uma entrega futura.
-- "Excluir dados da nuvem" apaga só o JSON. As imagens ficam no Storage da conta até essa limpeza existir.
+- "Excluir dados da nuvem" apaga só o JSON. As imagens ficam no Storage e podem ser removidas depois pela limpeza, quando tiverem mais de 30 dias e nenhuma cópia as usar.
+- Um aparelho que passe **mais de 30 dias** sem abrir o app, com uma ficha editada offline e nunca enviada, pode perder na nuvem uma foto removida nesse meio-tempo. A foto continua nesse aparelho e é reenviada pela autocorreção quando ele volta a sincronizar.
 - O envio exige `crypto.subtle`, que os navegadores só oferecem em contexto seguro (HTTPS ou localhost). Sem ele, a seção Imagens avisa, e as imagens continuam no JSON como antes.
 
 ## Salvamento na nuvem — Entrega 4 (interface)

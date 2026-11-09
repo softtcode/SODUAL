@@ -48,12 +48,20 @@ test('biografia: texto simples, sem marcação, limitada a 160 caracteres', () =
 });
 
 test('perfil persiste e dados antigos ganham perfil vazio sem perder nada', () => {
-  const e = load({ 'sodual.v1': JSON.stringify({ v: 3, chars: [], set: { nome: 'Ana', theme: 'dark', ac: '#c23fb0', img: 'data:x', imgCrop: { x: .4, y: .5, z: 1.2 } } }) });
+  const e = load({ 'sodual.v1': JSON.stringify({ v: 3, chars: [], set: { nome: 'Ana', theme: 'dark', ac: '#c23fb0', img: 'data:image/jpeg;base64,QUJD', imgCrop: { x: .4, y: .5, z: 1.2 } } }) });
   const s = j(e.get('S').set);
-  assert.equal(s.nome, 'Ana'); assert.equal(s.ac, '#c23fb0'); assert.equal(s.img, 'data:x'); assert.deepEqual(s.imgCrop, { x: .4, y: .5, z: 1.2 });
+  assert.equal(s.nome, 'Ana'); assert.equal(s.ac, '#c23fb0'); assert.equal(s.img, 'data:image/jpeg;base64,QUJD'); assert.deepEqual(s.imgCrop, { x: .4, y: .5, z: 1.2 });
   assert.deepEqual(s.perfil.insignias, []);
   vm.runInContext('LS="sodual.v1.u.t";S.set.perfil=normPerfil({titulo:"Desbravador",moldura:"cristais-mana",banner:"dragao-violeta"});save()', e.ctx);
   const e2 = load(e.mem); vm.runInContext('loadS("sodual.v1.u.t")', e2.ctx);
   const p = j(e2.get('S').set.perfil);
   assert.equal(p.titulo, 'Desbravador'); assert.equal(p.moldura, 'cristais-mana'); assert.equal(p.banner, 'dragao-violeta');
+});
+
+test('segurança: backup alheio não injeta endereço externo, CSS ou cor inválida (texto e dados do jogo intactos)', () => {
+  const e = load({ 'sodual.v1': JSON.stringify({ v: 3, chars: [{ id: 'c1', nome: 'Lia', cor: 'red;x', img: 'https://rastreador.example/p.png', hist: { t: 'T', html: '<b>oi</b>' } }], net: { pos: {}, edges: [], people: [{ id: 'p1', nome: 'A', cor: '#abc', img: 'x") background:url(https://e)' }] }, set: { nome: 'Ana', ac: 'url(https://e)', img: 'data:image/svg+xml;base64,PHN2Zy8+' } }) });
+  const s = JSON.parse(JSON.stringify(e.get('(loadS("sodual.v1"),S)')));
+  assert.equal(s.set.img, ''); assert.equal(s.set.ac, '#7b4be8'); assert.equal(s.chars[0].img, ''); assert.equal(s.chars[0].cor, '#7a3436');
+  assert.equal(s.net.people[0].img, ''); assert.equal(s.net.people[0].cor, '#abc');
+  assert.equal(s.chars[0].nome, 'Lia'); assert.equal(s.chars[0].hist.html, '<b>oi</b>'); assert.equal(s.set.nome, 'Ana');
 });

@@ -60,7 +60,13 @@ function norm(o){const d=Object.assign(DEF(),o&&typeof o=='object'?o:{});d.chars
   if(!POS[c.post])c.post='Neutra';if(c.pesada&&c.post!='Ofensiva')c.post='Ofensiva'});
  /* Rascunho de criação rolado com a quantidade antiga de dados raciais: a rolagem fica guardada em mrAntiga (não é apagada), mas deixa de valer; o jogador rola de novo com a regra atual. */
  const W=d.wiz,M=W&&W.mr;if(M&&PV[M.povo]&&Array.isArray(M.dados)&&M.dados.length!=PV[M.povo].d){W.mrAntiga=M;delete W.mr}
+ /* Segurança (backup importado de terceiros): imagens só como data URL de imagem rasterizada (nunca endereço externo, que
+    rastrearia quem abre a ficha, nem texto que escape do url() do CSS); cores só hexadecimais (#rgb/#rrggbb). Fora disso: vazio / cor padrão. */
+ const imgOk=o=>{if(o&&typeof o=='object')['img','imgSrc'].forEach(k=>{const v=o[k];if(v!=null&&v!==''&&!(typeof v=='string'&&IMG_SEGURA.test(v)))o[k]=''})},
+  corOk=(o,k,p)=>{if(o&&typeof o=='object'&&o[k]!=null&&!/^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(o[k]))o[k]=p};
+ imgOk(d.set);d.chars.forEach(imgOk);d.net.people.forEach(imgOk);corOk(d.set,'ac',DEF().set.ac);d.chars.forEach(c=>corOk(c,'cor','#7a3436'));d.net.people.forEach(p=>corOk(p,'cor','#5ee7ff'));
  ["folders","camp","bes","diario","arsenal"].forEach(k=>delete d[k]);d.v=VER;return d}
+const IMG_SEGURA=/^data:image\/(?:jpeg|png|webp|gif);base64,[A-Za-z0-9+/]*={0,2}$/;
 let S=DEF();
 /* Carrega (e migra, se for de versão anterior) os dados guardados na chave k e passa a salvar nela. Retorna false se a chave não existia. */
 function loadS(k){LS=k;let RAW=null;S=norm(DEF());try{RAW=localStorage.getItem(LS);if(RAW){const p=JSON.parse(RAW);const old=(p.v||1)<VER;if(old)try{localStorage.setItem(LS+'.bak',RAW)}catch(e){}S=norm(p);if(old)try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}}catch(e){try{localStorage.setItem(LS+'.corrupt',RAW||'')}catch(_){}S=DEF()}return RAW!=null}

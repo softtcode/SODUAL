@@ -7,9 +7,17 @@ const Modal=({t,onClose,children})=>{React.useEffect(()=>{const f=e=>e.key=='Esc
 const NoChar=({t})=>h`<${Empty} ic="scroll" t=${t||'Seu personagem ainda não nasceu'} d="Crie o personagem principal para abrir sua ficha, história, mochila, magias e habilidades." cta="Iniciar criação" fn=${()=>{ui.w=newW();ui.step=0;go('wiz')}}/>`;
 const Avatar=({img,s=34,ic=16})=>h`<span class="uav" style=${{width:s,height:s,backgroundImage:img?`url(${img})`:undefined}}>${!img&&h`<${I} n="user" s=${ic}/>`}</span>`;
 /* Perfil: ver src/perfil.js */
-const san=s=>{const d=new DOMParser().parseFromString('<div>'+s+'</div>','text/html'),r=d.body.firstChild;r.querySelectorAll('script,iframe,object,embed,style,link,img').forEach(n=>n.remove());r.querySelectorAll('*').forEach(n=>[...n.attributes].forEach(a=>{if(/^on/i.test(a.name)||/javascript:/i.test(a.value))n.removeAttribute(a.name)}));return r.innerHTML};
+/* História: LISTA DE PERMISSÃO (só a formatação que o editor produz) e NENHUM atributo — links, estilos, imagens e eventos saem.
+   Elementos perigosos somem com o conteúdo; os demais desconhecidos são "desembrulhados" (o texto fica). O texto nunca se perde.
+   DOMParser cria um documento inerte: nada executa durante a limpeza. */
+const SAN_OK=new Set(['B','STRONG','I','EM','U','S','P','DIV','SPAN','BR','H1','H2','H3','H4','UL','OL','LI','BLOCKQUOTE']),
+ SAN_FORA=new Set(['SCRIPT','STYLE','TEMPLATE','IFRAME','FRAME','FRAMESET','OBJECT','EMBED','SVG','MATH','NOSCRIPT','TEXTAREA','SELECT','OPTION','TITLE','HEAD','META','LINK','BASE','IMG','VIDEO','AUDIO','SOURCE','PICTURE','CANVAS','INPUT','BUTTON','FORM','PORTAL']);
+const san=s=>{const d=new DOMParser().parseFromString('<div>'+String(s||'')+'</div>','text/html'),r=d.body.firstChild;if(!r)return'';
+ const limpa=el=>{[...el.childNodes].forEach(n=>{if(n.nodeType==3)return;if(n.nodeType!=1){n.remove();return}const t=n.tagName.toUpperCase();
+  if(SAN_FORA.has(t)){n.remove();return}limpa(n);if(!SAN_OK.has(t)){n.replaceWith(...n.childNodes);return}[...n.attributes].forEach(a=>n.removeAttribute(a.name))})};
+ limpa(r);return r.innerHTML};
 const Hist=({c})=>{const[st,ss]=React.useState('Salvo ✔'),ref=React.useRef(),tm=React.useRef();c.hist=c.hist||{t:'',html:''};
- const flush=()=>{if(ref.current){c.hist.html=ref.current.innerHTML;save();ss('Salvo ✔')}};
+ const flush=()=>{if(ref.current){c.hist.html=san(ref.current.innerHTML);save();ss('Salvo ✔')}};
  const ed=()=>{ss('Salvando…');clearTimeout(tm.current);tm.current=setTimeout(flush,600)};
  React.useEffect(()=>()=>{clearTimeout(tm.current);flush()},[]);
  const cmd=(a,v)=>{ref.current.focus();document.execCommand(a,false,v);ed()},tb=(l,t,a,v)=>h`<button class="b" title=${t} onMouseDown=${e=>e.preventDefault()} onClick=${()=>cmd(a,v)}>${l}</button>`;
