@@ -1,5 +1,5 @@
 /* ===== Criação de personagem — regras, cálculos e validação (independente da interface) =====
-   Fonte: Livro I, ed. 0.3, caps. 10, 13, 14, 16 e 17.
+   Fonte: Livro I, ed. 0.4, caps. 10, 13, 14, 16 e 17.
    Mana (cap. 10 + regra da mesa): a reserva inicial é rolada (dados raciais em D4 + Corpo), com até 3 tentativas.
    Cada nova rolagem substitui definitivamente a anterior; não há como escolher entre resultados.
    Depende de rules.js (AT, AN, PV, ORI, ORI_PER, NARR, RG, uid, rnd). Não acessa DOM nem localStorage. */

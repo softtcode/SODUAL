@@ -38,7 +38,7 @@ const dataHoraSy=t=>{try{return t?new Date(t).toLocaleString('pt-BR',{dateStyle:
 const ResumoVersao=({t,ic,r,linhas})=>h`<section class="cf-v"><h3><${I} n=${ic} s=${16}/>${t}</h3>${r?h`<dl>
  <div><dt>Personagem</dt><dd>${r.nome||'—'}${r.fichas>1?' (+'+(r.fichas-1)+')':''}</dd></div>
  <div><dt>Mana</dt><dd>${r.mana!=null?r.mana+(r.manaMax!=null?' / '+r.manaMax:''):'—'}</dd></div>
- <div><dt>Núcleo</dt><dd>${r.nucleo||'—'}</dd></div>
+ <div><dt>Núcleo</dt><dd>${r.nucleo?nucNome(r.nucleo):'—'}</dd></div>
  <div><dt>Rede</dt><dd>${r.pessoas} pessoa(s) · ${r.conexoes} conexão(ões)</dd></div>
  <div><dt>Eventos de combate</dt><dd>${r.eventos}</dd></div>
  ${linhas.map(([a,b],i)=>h`<div key=${i}><dt>${a}</dt><dd>${b}</dd></div>`)}</dl>`:h`<p class="mut">Não há dados desta conta na nuvem (foram excluídos por outro dispositivo).</p>`}</section>`;

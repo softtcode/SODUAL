@@ -2,7 +2,7 @@
    Mostrada antes do login para visitantes. Não acessa dados de conta nem o Supabase: os botões só levam à tela de login/cadastro existente.
    Rotas por hash (sem roteador): "#apresentacao" mostra esta página a qualquer pessoa (inclusive logada, sem encerrar a sessão);
    "#entrar" mostra o login. Ver Gate em src/auth.js.
-   Textos baseados no Livro I (ed. 0.3) e em src/lore.js — nada de história, lugar ou entidade foi inventado.
+   Textos baseados no Livro I (ed. 0.4) e em src/lore.js — nada de história, lugar ou entidade foi inventado.
    Demonstrações: usam as funções reais de regras (normFerimentos, wound, pen, progresso, NUC, regra dos D20) sobre objetos LOCAIS,
    criados só para a demonstração: nada é salvo, nenhuma ficha é lida ou alterada e não há chamada de rede.
    ARTES: LAND_ART concentra as imagens. Para usar artes próprias, troque os caminhos (ex.: 'assets/landing-hero.webp') e mantenha width/height. */
@@ -14,7 +14,7 @@ const LAND_ART={
  povo:{src:()=>IMG('darnio'),alt:'Ilustração de um Dárnio, um dos três povos de Bevon'}};
 /* Cards do sistema: textos curtos (2–3 linhas), mesmas regras de antes. */
 const LAND_MEC=[['scroll','Criação de personagens','Povo, origem, atributos, perícias e habilidade racial, tudo conferido pelas regras do Livro I.'],
- ['flame','Mana e núcleo','Role sua reserva de mana e acompanhe o núcleo do Preto ao Branco. Quantidade não é controle.'],
+ ['flame','Mana e núcleo','Role sua reserva de mana e acompanhe o núcleo do Preto ao Branco Puro. Quantidade não é controle.'],
  ['sword','Combate e consequências','Sem pontos de vida: ferimentos por região, estado Fatal e até a perda de um membro.'],
  ['pen','Histórias e evolução','Registre a trajetória, os vínculos e cada passo do núcleo do seu personagem.']];
 /* ===== Céu estrelado (decorativo) =====
@@ -73,10 +73,10 @@ const DemoNuc=()=>{const[i,si]=React.useState(4),n=NUC[i],cor=NUC_C[n],mov=d=>si
  return h`<div class="ld-demo-g ld-nucd">
   <div class="ld-orbe-w" aria-hidden="true"><span class="ld-orbe" style=${{'--nc':cor}}></span></div>
   <div class="ld-info">
-   <div class="ld-reg" aria-live="polite"><small>Estágio ${i+1} de ${NUC.length}</small><h3>${n}</h3><p>O núcleo fica no centro do abdômen e se desenvolve com o tempo. Estágio superior não garante vitória, reserva maior nem domínio perfeito da mana.</p></div>
+   <div class="ld-reg" aria-live="polite"><small>Estágio ${i+1} de ${NUC.length}${NUC_FONTE(n)=='mesa'?' · regra da mesa':''}</small><h3>${nucNome(n)}</h3><p>O núcleo fica no centro do abdômen e se desenvolve com o tempo. Estágio superior não garante vitória, reserva maior nem domínio perfeito da mana.</p></div>
    <div class="ld-nucs" role="radiogroup" aria-label="Estágios do núcleo" onKeyDown=${e=>{const d={ArrowRight:1,ArrowDown:1,ArrowLeft:-1,ArrowUp:-1}[e.key];if(d){e.preventDefault();mov(d);const g=e.currentTarget;requestAnimationFrame(()=>{const b=g.querySelector('[aria-checked="true"]');b&&b.focus()})}}}>
-    ${NUC.map((x,k)=>h`<button key=${x} type="button" role="radio" aria-checked=${k==i} tabIndex=${k==i?0:-1} aria-label=${(k+1)+'. '+x} title=${x} class=${k==i?'on':''} style=${{'--nc':NUC_C[x]}} onClick=${()=>si(k)}></button>`)}</div>
-   <div class="ld-nuc-l"><span>Preto (inicial)</span><span>Branco</span></div>
+    ${NUC.map((x,k)=>h`<button key=${x} type="button" role="radio" aria-checked=${k==i} tabIndex=${k==i?0:-1} aria-label=${(k+1)+'. '+nucNome(x)} title=${nucNome(x)} class=${k==i?'on':''} style=${{'--nc':NUC_C[x]}} onClick=${()=>si(k)}></button>`)}</div>
+   <div class="ld-nuc-l"><span>Preto (inicial)</span><span>Branco Puro</span></div>
   </div></div>`};
 
 /* ===== Demonstração 3: teste de D20 — mesma regra de roll() em rules.js:
@@ -95,7 +95,7 @@ const DemoDado=()=>{const[a,sa]=React.useState(2),[g,sg]=React.useState(2),[res,
    :h`<p class="ld-vazio">Escolha o atributo e a perícia e role.</p>`}</div></div>`};
 
 const ABAS=[['fer','Ferimentos','shield','Cada região do corpo tem o próprio grau de ferimento e a própria progressão. Escolha um exemplo, toque numa região e registre ferimentos para ver as regras reais em ação.',DemoFer],
- ['nuc','Núcleo','flame','Do Preto ao Branco: explore a sequência de estágios do núcleo de mana usada no aplicativo.',DemoNuc],
+ ['nuc','Núcleo','flame','Do Preto ao Branco Puro: explore a sequência de estágios do núcleo usada no aplicativo (os tons de Amarelo são regra da mesa).',DemoNuc],
  ['dado','Rolagens','dice','Testes com D20: o atributo define quantos dados você rola e qual resultado fica; a perícia soma ao final.',DemoDado]];
 const Demos=()=>{const[t,st]=React.useState(0),tabs=React.useRef([]),D=ABAS[t][4],
  tecla=e=>{const d={ArrowRight:1,ArrowLeft:-1,Home:-9,End:9}[e.key];if(!d)return;e.preventDefault();const n=d==-9?0:d==9?ABAS.length-1:(t+d+ABAS.length)%ABAS.length;st(n);tabs.current[n]&&tabs.current[n].focus()};
@@ -183,6 +183,6 @@ const Landing=({logado,onEntrar})=>{const raiz=React.useRef(),[mapa,smapa]=React
    ${cta(principal,'big')}</div>
  </section>
  </main>
- <footer class="ld-ft"><span>SODUAL</span> · Baseado no <i>Livro I — Guia do Jogador</i> (ed. 0.3)</footer>
+ <footer class="ld-ft"><span>SODUAL</span> · Baseado no <i>Livro I — Guia do Jogador</i> (ed. 0.4)</footer>
  ${mapa&&h`<${LdModal} titulo="Mapa do continente de Sodual" onClose=${()=>smapa(false)}><img class="ld-mdl-img" src=${A.mapa.src()} alt=${A.mapa.alt}/><p class="ld-mdl-c">Bevon a oeste, Morgot a leste. O mapa foi preservado sem fronteiras nem nomes inventados.</p><//>`}
  </div>`};

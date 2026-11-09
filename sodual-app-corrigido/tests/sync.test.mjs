@@ -218,7 +218,7 @@ test('16. dados removidos da nuvem por outro dispositivo: não são recriados si
 
 test('20–25. ida e volta preserva rascunho, histórico de combate, ferimentos, amputação, mana, núcleo, perfil e rede', async () => {
   const srv = new Servidor(), a = dispositivo(); await a.entrar(srv, U); criarFicha(a);
-  a.run(`const c=S.chars[0];c.mana=5;c.nucleo='Amarelo Claro';wound(c,'tronco',2);wound(c,'be',5);wound(c,'be',1,()=>4);wound(c,'cabeca',1);
+  a.run(`const c=S.chars[0];c.mana=5;c.nucleo='Amarelo Claro';wound(c,'tronco',2);wound(c,'be',5);wound(c,'be',2,()=>4);wound(c,'cabeca',1);
     S.set.perfil=normPerfil({titulo:'Desbravador',bio:'Oi',moldura:'runas-douradas',banner:'dragao-violeta',insignias:['explorador']});
     S.net.people.push({id:'p9',nome:'Mestre',cor:'#fff',img:''});S.net.edges.push({id:'e1',a:c.id,b:'p9',tipo:'Aliado'});S.net.pos.p9={x:10,y:20};
     S.wiz=newW();S.wiz.nome='Rascunho';save()`);

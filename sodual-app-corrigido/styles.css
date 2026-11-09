@@ -679,6 +679,15 @@ img.avm-f{object-fit:contain}
 /* ---------- Movimento reduzido ---------- */
 @media(prefers-reduced-motion:reduce){.sy-run svg,#toast,.ch-mana b,.mn-v,.note.crit-ev,.sil .rg.hit .rg-o{animation:none!important}.ni,.xc,.pf-op,.bar i,.ch-mt i{transition:none!important}.xc:hover,.ni:hover{transform:none}}
 
+/* ===== Livro I ed. 0.4: características complementares e etiquetas de fonte das regras ===== */
+.cp-pv{margin-top:10px;display:grid;gap:8px}.cp-pv p{margin:0}
+.cp-tg{display:inline-block;font-size:.68rem;font-weight:600;letter-spacing:.02em;padding:1px 7px;border-radius:999px;border:1px solid var(--line);color:var(--mut);vertical-align:middle}
+.cp-ca{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}.cp-ca label{display:grid;gap:4px;font-size:.8rem;color:var(--mut)}.cp-ca select{width:100%}
+.cp-av{display:block;line-height:1.4}
+.pend-t{display:inline-block;font-size:.68rem;font-weight:700;padding:1px 7px;border-radius:999px;margin-right:4px;vertical-align:1px;white-space:nowrap}
+.pend-t.livro{background:#3fb98a22;color:#7fe0b8;border:1px solid #3fb98a55}.pend-t.mesa{background:#7b4be822;color:#c3a6ff;border:1px solid #7b4be866}.pend-t.pend{background:#e2a13a1c;color:#ffd27a;border:1px solid #e2a13a66}
+[data-theme=light] .pend-t.livro{color:#1d7a55}[data-theme=light] .pend-t.mesa{color:#5a2fc0}[data-theme=light] .pend-t.pend{color:#8a5a00}
+.pend-lg{font-size:.78rem;line-height:1.9}
 /* ===== LANDING PAGE (src/landing.js) — paleta escura fixa, independente do tema escolhido no app ===== */
 .ld{--ink:#eeedff;--mut:#c2c0ec;--soft:#dcdaf8;--gold:#f0c76a;--gold2:#ffe3a3;--line:#3b3a8a;--line2:#6a58c8;--vi:#8b5cf6;--vi2:#c23fb0;--lil:#d9c6ff;--bg:#0b0a24;
  --card:linear-gradient(165deg,#1f1b5fe0,#100e34f2);--glow:0 0 0 1px #8b5cf666,0 20px 48px -18px #8b5cf6b3;

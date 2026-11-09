@@ -205,7 +205,7 @@ test('7. acumuladores de regiões diferentes são independentes', () => {
 
 test('curar a região zera os acumuladores; amputação continua', () => {
   const c = ficha();
-  ate(c, 'pe', FATAL); F.wound(c, 'pe', LEVE, () => 4); F.wound(c, 'pe', LEVE, nunca);
+  ate(c, 'pe', FATAL); F.wound(c, 'pe', INTER, () => 4); F.wound(c, 'pe', LEVE, nunca); F.wound(c, 'pe', LEVE, nunca);
   assert.equal(c.w.pe.ac[LEVE], 2);
   F.ajusteRegiao(c, 'pe', 'curar');
   assert.deepEqual([...c.w.pe.ac], [0, 0, 0, 0, 0, 0]); assert.equal(c.w.pe.amp, 1);
@@ -300,11 +300,11 @@ test('morte não é disparada de novo e a ficha é preservada', () => {
 });
 
 /* ===== Desmembramento ===== */
-test('Fatal em braço + novo Leve rola 1D4; 4 amputa', () => {
+test('Fatal em braço + novo Intermediário rola 1D4; 4 amputa (ed. 0.4)', () => {
   const c = ficha();
   ate(c, 'be', FATAL);
   let rolou = 0;
-  const ev = F.wound(c, 'be', LEVE, () => { rolou++; return 4; });
+  const ev = F.wound(c, 'be', INTER, () => { rolou++; return 4; });
   assert.equal(rolou, 1);
   assert.equal(ev.d4, 4); assert.equal(ev.amp, true);
   assert.equal(c.w.be.amp, 1); assert.equal(F.membro(c, 'be'), 'Amputado');
@@ -324,12 +324,12 @@ test('Fatal em perna + novo Intermediário rola 1D4; 1, 2 e 3 não amputam', () 
 test('sem teste de desmembramento fora das condições', () => {
   const c = ficha();
   ate(c, 'be', GRAVE);
-  F.wound(c, 'be', LEVE, nunca);                        // membro não Fatal
+  F.wound(c, 'be', INTER, nunca);                       // membro não Fatal
   ate(c, 'bd', FATAL);
-  F.wound(c, 'bd', ALTO, nunca); F.wound(c, 'bd', GRAVE, nunca); F.wound(c, 'bd', FATAL, nunca); // grau alto demais
+  F.wound(c, 'bd', LEVE, nunca);                        // ed. 0.4: Leve em membro Fatal não rola
   for (const r of ['cabeca', 'tronco']) {               // cabeça e tronco nunca
     const d = ficha(); ate(d, r, FATAL);
-    const ev = F.wound(d, r, LEVE, nunca);
+    const ev = F.wound(d, r, INTER, nunca);
     assert.equal(ev.d4, null); assert.equal(d.w[r].amp, 0);
     assert.equal(F.ajusteRegiao(d, r, 'amputar'), null);
   }
@@ -338,8 +338,8 @@ test('sem teste de desmembramento fora das condições', () => {
 test('membro amputado não é amputado de novo e permanece amputado', () => {
   const c = ficha();
   ate(c, 'pe', FATAL);
-  F.wound(c, 'pe', LEVE, () => 4);
-  const ev = F.wound(c, 'pe', LEVE, nunca);
+  F.wound(c, 'pe', INTER, () => 4);
+  const ev = F.wound(c, 'pe', GRAVE, nunca);
   assert.equal(ev.d4, null);
   F.ajusteRegiao(c, 'pe', 'curar'); F.ajusteRegiao(c, 'pe', 'definir', 0); F.ajusteRegiao(c, 'pe', 'grau');
   assert.equal(c.w.pe.amp, 1);                          // ajustes de grau não regeneram
@@ -367,19 +367,42 @@ test('histórico registra região, grau, antes, depois, 1D4, amputação e morte
   assert.deepEqual([e2.d4, e2.amp, e2.antes.amp, e2.depois.amp], [4, true, 0, 1]);
 });
 
+test('ed. 0.4: membro Fatal + Alto, Grave ou Fatal sem morte direta rola 1D4; todos os resultados do D4', () => {
+  for (const g of [ALTO, GRAVE, FATAL]) for (const x of [1, 2, 3, 4]) {
+    const c = ficha(); ate(c, 'bd', FATAL);
+    let rolou = 0; const ev = F.wound(c, 'bd', g, () => { rolou++; return x; });
+    assert.equal(rolou, 1, 'grau ' + g); assert.equal(ev.d4, x); assert.equal(ev.amp, x === 4); assert.equal(c.w.bd.amp, x === 4 ? 1 : 0);
+    assert.equal(c.dead, false); assert.equal(c.w.bd.g, FATAL);
+  }
+});
+
+test('ed. 0.4: morte direta tem prioridade — sem rolagem de desmembramento como procedimento adicional', () => {
+  const c = ficha(); ate(c, 'bd', FATAL); c.w.tronco.g = FATAL;          // duas regiões Fatais (montadas sem passar pela morte)
+  const ev = F.wound(c, 'bd', ALTO, nunca);                               // outra região Fatal + Alto: morte
+  assert.equal(ev.morte, true); assert.equal(ev.d4, null); assert.equal(c.w.bd.amp, 0); assert.equal(c.dead, true);
+  const d = ficha(); ate(d, 'pe', FATAL); d.w.cabeca.g = FATAL;
+  const e2 = F.wound(d, 'pe', INTER, () => 4);                            // Intermediário não mata: rola
+  assert.equal(e2.morte, false); assert.equal(e2.d4, 4); assert.equal(d.w.pe.amp, 1);
+});
+
+test('ed. 0.4: texto do registro e das pendências não fala mais em "Leve ou Intermediário"', () => {
+  assert.ok(!/Leve ou Intermediário/.test(JSON.stringify(F.PEND)));
+  assert.ok(F.PEND.some(([t, p]) => t === 'livro' && /Intermediário ou superior/.test(p)));
+});
+
 /* ===== Persistência e compatibilidade ===== */
 test('amputação, morte, contadores e histórico persistem ao salvar e recarregar', () => {
   const e = load();
   vm.runInContext(`LS="sodual.v1.u.t";S.chars=[normFerimentos({id:"x",nome:"X",a:{},w:{},post:"Neutra"})];
     const c=S.chars[0];for(let i=0;i<4;i++)for(let j=0;j<3;j++)wound(c,"be",c.w.be.g||1,()=>1);
-    wound(c,"be",1,()=>4);wound(c,"tronco",2);wound(c,"cabeca",5);wound(c,"pd",3);wound(c,"pd",1);wound(c,"tronco",1);save()`, e.ctx);
+    wound(c,"be",2,()=>4);wound(c,"tronco",2);wound(c,"cabeca",5);wound(c,"pd",3);wound(c,"pd",1);wound(c,"tronco",1);save()`, e.ctx);
   const e2 = load(e.mem);
   vm.runInContext('loadS("sodual.v1.u.t")', e2.ctx);
   const c = JSON.parse(JSON.stringify(e2.get('S').chars[0]));
   assert.equal(c.w.be.amp, 1); assert.equal(c.w.be.g, FATAL);
   assert.equal(c.dead, true);
   assert.equal(c.w.tronco.g, INTER); assert.equal(c.w.tronco.h, 1);
-  assert.equal(c.w.be.cnt[LEVE], 4);
+  assert.equal(c.w.be.cnt[LEVE], 3); assert.equal(c.w.be.cnt[INTER], 3);
   assert.ok(c.cb.length >= 15);
   // 6. acumuladores persistem: o Leve guardado no tronco completa o par depois de recarregar
   assert.equal(c.w.pd.ac[LEVE], 1); assert.equal(c.w.tronco.ac[LEVE], 1);

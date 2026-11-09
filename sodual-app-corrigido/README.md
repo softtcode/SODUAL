@@ -1,6 +1,6 @@
 # SODUAL — Plataforma de ficha, lore e constelação
 
-Baseada no *Sodual Livro I – Guia do Jogador, Edição 0.3*. Nenhuma regra foi inventada; lacunas do livro estão sinalizadas na interface.
+Baseada no *Sodual Livro I – Guia do Jogador, Edição 0.4* (o PDF incluído em ssets/livro.pdf é essa edição, 73 páginas). Nenhuma regra foi inventada. A Biblioteca identifica o que é **Livro I 0.4**, o que é **regra da mesa** e o que está **pendente**.
 
 ## Como usar
 - Sirva a pasta por HTTP (ex.: `npx serve .` ou a Vercel) com um `config.js` válido (ver **Autenticação**). Precisa de internet para React/Framer Motion/supabase-js por CDN e para o login.
@@ -58,7 +58,7 @@ Não desligue esses limites: eles protegem a conta dos jogadores contra força b
 
 ## Salvamento na nuvem — Entrega 6 (validação final)
 **Validado automaticamente**
-- `node --test "tests/*.test.mjs"` executa 119 testes. Eles cobrem os 25 casos obrigatórios da especificação (sincronização, conflitos, offline, troca de conta, backup, exclusões, imagens e preservação de ferimentos, mana, núcleo, perfil e rede), além do isolamento entre contas no Storage.
+- `node --test "tests/*.test.mjs"` executa 128 testes. Eles cobrem os 25 casos obrigatórios da especificação (sincronização, conflitos, offline, troca de conta, backup, exclusões, imagens e preservação de ferimentos, mana, núcleo, perfil e rede), além do isolamento entre contas no Storage.
 - `node supabase/tests/run_local.mjs .` valida as migrações 001 e 002 em Postgres real (PGlite). Também confere se os testes SQL apanham 9 sabotagens de segurança.
 - No Supabase real: `001_cloud_sync_test.sql` e `002_images_storage_test.sql` passaram. Os dois terminam com a linha `resultado`.
 - Responsividade: com 375, 768 e 1024 px, nenhuma página transborda na horizontal (a Rede é um mapa navegável).
@@ -231,11 +231,14 @@ Aplicada e verificada no projeto: tabela, RLS e RPCs abaixo.
 
 ## Combate e núcleo (src/rules.js)
 - **Posturas:** `setPostura`, `setPesada`, `posturasPermitidas`, `post` (efetiva). Arma pesada só permite Ofensiva; ao marcá-la, a postura vira Ofensiva, e ao desmarcar nada é restaurado. Fichas salvas com arma pesada e outra postura são corrigidas ao carregar.
-- **Ataque:** a postura Ofensiva dá +2 (`ATK_POS`, `atkPostura`, `atkMod`), aplicado só no cálculo; perícias e atributos não mudam.
+- **Defesa por postura (Livro I 0.4, cap. 19):** `POS` = Ofensiva +0/+0, Neutra +2/+0, Defensiva +3/+1 (cabeça e tronco / braços e pernas). A Defensiva dava +2 nos membros na 0.3.
+- **Ataque (regra da mesa):** a postura Ofensiva dá +2 (`ATK_POS`, `atkPostura`, `atkMod`), aplicado só no cálculo; perícias e atributos não mudam.
 - **Ferimentos:** tudo em `wound(c, r, g, d4?)`, que devolve o evento registrado. Cada região tem estado próprio (`c.w[r]`: `g` grau, `h` contador rumo ao próximo grau, `cnt[g]` ferimentos recebidos por grau, `amp` 0 Íntegro / 1 Amputado, `log`). Só um ferimento **do mesmo grau** do estado atual avança o contador. Regra geral: dois graus iguais formam o seguinte (Leve + Leve = Intermediário … Grave + Grave = Fatal). Exceção nos braços e pernas: 3 Leves formam Intermediário e 3 Intermediários formam Alto; de Alto em diante também bastam 2 (`NEED`). O próprio estado conta como uma ocorrência: ao chegar a um grau, o contador já começa em 1. **Grau menor fica acumulado** em `ac[grau]` (por região): ao juntar a quantidade exigida para aquele grau (`NEED`), as ocorrências são consumidas e formam 1 ferimento do grau seguinte, que volta a contar. As conversões são sucessivas e cada ferimento é usado uma só vez (ex.: tronco Intermediário + Leve + Leve = Alto). Grau maior define o grau e já conta 1; as ocorrências do grau anterior vão para o acumulador, nada é descartado (confirmado pela mesa). Fatal é o limite: em região Fatal os ferimentos continuam acumulados, mas nenhuma conversão forma outro Fatal. "Curar" zera também os acumuladores. Fichas antigas começam com acumuladores vazios.
 - **Fatal e morte:** Fatal não mata sozinho (só sinaliza condição crítica). `avaliarMorte` usa o estado **anterior** ao ferimento: morte imediata quando outra região já está Fatal e o novo ferimento é Alto ou pior. Fica em `c.dead` e `c.morte`, não dispara de novo, e nada é apagado.
-- **Desmembramento:** braço/perna já Fatal e íntegro que recebe Leve ou Intermediário rola 1D4 na hora (`testaDesmembramento`). No 4, `amp = 1`. Na silhueta SVG o membro aparece só como um contorno tracejado (ausente). Cabeça e tronco nunca. Os ajustes manuais de grau não regeneram o membro. Amputação manual e as correções (desfazer amputação/morte) pedem confirmação.
+- **Desmembramento (Livro I 0.4):** braço/perna já Fatal e íntegro que recebe ferimento **Intermediário ou superior**, sem que esse ferimento cause morte direta, rola 1D4 na hora (`testaDesmembramento`). Leve não rola; se o ferimento mata, a morte tem prioridade e não há rolagem. No 4, `amp = 1`. Na silhueta SVG o membro aparece só como um contorno tracejado (ausente). Cabeça e tronco nunca. Os ajustes manuais de grau não regeneram o membro. Amputação manual e as correções (desfazer amputação/morte) pedem confirmação.
 - **Histórico de combate:** `c.cb` (até 200 eventos com região, grau, antes, depois, 1D4, amputação e morte), visível no Modo de Combate.
+- **Penalidades e Tenacidade Física (Dárnios, 0.4):** `penBase(c,r)` é a penalidade do grau; `pen(c,r)` é a final, com a Tenacidade (−1 vira 0, −2 vira −1, −3 vira −2, uma única vez); `penGeral(c)` é o −3 geral do Fatal (−2 com Tenacidade). Tudo derivado do povo: o grau gravado nunca muda e o membro Fatal continua inutilizado.
+- **Conhecimento Ampliado (Arveni, 0.4):** duas escolhas de perícia em `c.ca` (`setConhecimento`), exibidas na ficha junto da habilidade racial. Nenhum bônus é somado: o livro não definiu o grau. O campo só passa a existir quando o jogador escolhe (fichas antigas não são reescritas).
 - **Compatibilidade:** `normFerimentos` só completa campos ausentes (`cnt`, `cb`, regiões faltando) e saneia valores impossíveis. Grau, contador, amputação e morte gravados não mudam.
 
 ## Imagens (perfil e personagem)
@@ -243,7 +246,7 @@ Aplicada e verificada no projeto: tabela, RLS e RPCs abaixo.
 - Proporção usada: a do espaço real. Hoje os dois espaços (`.uav` no perfil, `.sh-av .av` na ficha) são círculos 1:1 (`IMG_CFG`).
 - Armazenamento local: `localStorage` da conta. `img` é o recorte pronto (JPEG de até ~90 KB, usado por todas as telas como antes). `imgSrc` é a original reduzida (lado ≤ 1280 px, até ~240 KB), para reajustar depois. `imgCrop` = `{x, y, z}`. Se faltar espaço, só o recorte é salvo. Fotos antigas (só `img`) podem ser reajustadas a partir do próprio recorte.
 - Na nuvem: Storage privado, ver "Salvamento na nuvem — Entrega 5".
-- **Núcleo:** Preto, Vermelho Escuro, Vermelho Sólido, Vermelho Claro, Laranja Escuro, Laranja Sólido, Laranja Claro, Amarelo Escuro, Amarelo Sólido, Amarelo Claro, Prata Escura, Prata Sólida, Prata Clara, Branco (`NUC`, `setNucleo`). Toda ficha nova começa em Preto (`NUC_INI`); fichas antigas sem estágio continuam como estavam. O antigo "Laranja" é preservado e sinalizado na ficha até o jogador escolher o tom; nunca é convertido automaticamente.
+- **Núcleo:** Preto, Vermelho Escuro, Vermelho Sólido, Vermelho Claro, Laranja Escuro, Laranja Sólido, Laranja Claro, Amarelo Escuro, Amarelo Sólido, Amarelo Claro, Prata Escura, Prata Sólida, Prata Clara, Branco (`NUC`, `setNucleo`). O valor gravado continua `Branco`; a interface mostra o nome oficial **Branco Puro** (`nucNome`). Amarelo é regra da mesa (`NUC_FONTE`): o livro 0.4 deixa pendentes as cores entre Laranja e Prata. Toda ficha nova começa em Preto (`NUC_INI`); fichas antigas sem estágio continuam como estavam. O antigo "Laranja" é preservado e sinalizado na ficha até o jogador escolher o tom; nunca é convertido automaticamente.
 
 ## Testes
 Requer Node 18+ (sem dependências):

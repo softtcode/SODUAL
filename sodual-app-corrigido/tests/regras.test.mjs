@@ -212,3 +212,64 @@ test('ficha criada registra a rolagem e a tentativa usada', () => {
   assert.equal(c.mana0.tentativa, 1);
   assert.equal('mr' in c, false);
 });
+
+/* ===== Livro I ed. 0.4 ===== */
+test('0.4 posturas: Defensiva +3 cabeça/tronco e +1 membros; Neutra e Ofensiva inalteradas; ataque +2 da mesa preservado', () => {
+  eq(F.POS, { Ofensiva: [0, 0], Neutra: [2, 0], Defensiva: [3, 1] });
+  eq(F.ATK_POS, { Ofensiva: 2, Neutra: 0, Defensiva: 0 });
+  const c = ficha({ post: 'Defensiva' });
+  assert.equal(F.POS[F.post(c)][F.RG.cabeca[1]], 3); assert.equal(F.POS[F.post(c)][F.RG.bd[1]], 1);
+  F.setPesada(c, true); assert.equal(F.post(c), 'Ofensiva');                    // arma pesada mantém a restrição
+});
+
+const comPovo = (povo, o = {}) => ficha(Object.assign({ povo }, o));
+test('0.4 Tenacidade Física: só Dárnios; reduz 1 da penalidade final sem mudar o grau', () => {
+  for (const povo of ['Arveni', 'Sáelios']) {
+    const c = comPovo(povo); [1, 2, 3, 4, 5].forEach((g, i) => c.w[['cabeca', 'tronco', 'bd', 'be', 'pd'][i]].g = g);
+    eq(['cabeca', 'tronco', 'bd', 'be', 'pd'].map(r => F.pen(c, r)), [0, -1, -2, -3, -3]); assert.equal(F.penGeral(c), -3); assert.equal(F.temTenacidade(c), false);
+  }
+  const d = comPovo('Dárnios'); [1, 2, 3, 4, 5].forEach((g, i) => d.w[['cabeca', 'tronco', 'bd', 'be', 'pd'][i]].g = g);
+  eq(['cabeca', 'tronco', 'bd', 'be', 'pd'].map(r => F.pen(d, r)), [0, 0, -1, -2, -2]);
+  eq(['cabeca', 'tronco', 'bd', 'be', 'pd'].map(r => F.penBase(d, r)), [0, -1, -2, -3, -3]);
+  assert.equal(F.penGeral(d), -2); assert.equal(d.w.pd.g, 5);                    // grau gravado intacto
+  assert.equal(F.penGeral(comPovo('Dárnios')), 0);                               // sem Fatal, sem penalidade geral
+});
+
+test('0.4 Tenacidade não impede agravamento, Fatal nem amputação, e não substitui a habilidade principal', () => {
+  const d = comPovo('Dárnios', { hab: 'Mãos Firmes' });
+  for (let i = 0; i < 12 && d.w.be.g < 5; i++) F.wound(d, 'be', d.w.be.g || 1, () => 1);
+  assert.equal(d.w.be.g, 5);
+  const ev = F.wound(d, 'be', 2, () => 4); assert.equal(ev.amp, true); assert.equal(d.w.be.amp, 1);
+  assert.equal(F.pen(d, 'be'), -2); assert.equal(d.hab, 'Mãos Firmes');
+  eq(F.PV['Dárnios'].comp.map(x => x[0]), ['Tenacidade Física']); assert.ok(!F.PV['Dárnios'].hab.some(x => x[0] === 'Tenacidade Física'));
+});
+
+test('0.4 Conhecimento Ampliado: Arveni registram 2 escolhas, sem bônus e sem mexer nas perícias', () => {
+  const a = comPovo('Arveni', { hab: 'Leitura Social', sk: { Atletismo: 2 } });
+  assert.equal(F.temConhecimento(a), true); eq(F.conhecimento(a), []);
+  assert.equal(F.setConhecimento(a, 0, 'História'), true); assert.equal(F.setConhecimento(a, 1, 'Religião'), true);
+  eq(a.ca, ['História', 'Religião']); eq(a.sk, { Atletismo: 2 }); assert.equal(a.hab, 'Leitura Social');
+  assert.equal(F.setConhecimento(a, 1, 'História'), false);                       // repetida
+  assert.equal(F.setConhecimento(a, 2, 'Medicina'), false);                       // só duas
+  assert.equal(F.setConhecimento(a, 0, 'Voo'), false);                            // perícia inexistente
+  assert.equal(F.setConhecimento(comPovo('Dárnios'), 0, 'História'), false);       // outros povos não têm
+  assert.equal(F.setConhecimento(a, 0, ''), true); eq(a.ca, ['', 'Religião']);
+});
+
+test('0.4 núcleo: estágios antigos carregam sem mudança; Branco Puro é só nome de exibição; Amarelo identificado como mesa', () => {
+  const raw = JSON.stringify({ v: 3, chars: [{ id: 'x', nome: 'X', povo: 'Dárnios', a: {}, w: {}, nucleo: 'Branco', mana: 4, manaMax: 9 }, ], net: { pos: {}, edges: [], people: [] }, set: { nome: 'J' } });
+  const e = load({ 'sodual.v1': raw }); const c = JSON.parse(JSON.stringify(e.get('(loadS("sodual.v1"),S.chars[0])')));
+  assert.equal(c.nucleo, 'Branco'); assert.equal(c.mana, 4); assert.equal(c.manaMax, 9); assert.equal(c.ca, undefined);
+  assert.equal(F.nucNome('Branco'), 'Branco Puro'); assert.equal(F.nucNome('Prata Clara'), 'Prata Clara');
+  eq(F.NUC.filter(n => F.NUC_FONTE(n) === 'mesa'), ['Amarelo Escuro', 'Amarelo Sólido', 'Amarelo Claro']);
+  assert.equal(F.NUC_FONTE('Laranja'), '');                                       // legado: nem livro nem mesa
+});
+
+test('0.4 compatibilidade: carregar e salvar uma ficha antiga não altera nada (sem conflito falso de sincronização)', () => {
+  const ficha0 = { v: 3, chars: [{ id: 'k1', nome: 'Antiga', povo: 'Arveni', origem: 'Camponês', hab: 'Leitura Social', a: { for: 2 }, sk: { Atletismo: 2 }, nucleo: 'Laranja', mana: 5, manaMax: 11, post: 'Defensiva', w: {}, cb: [], hist: { t: '', html: '' }, bag: [], magias: [], habs: [], money: [0, 0, 0] }], net: { pos: {}, edges: [], people: [] }, set: { nome: 'J' } };
+  const e = load({ 'sodual.v1': JSON.stringify(ficha0) });
+  const a = e.get('JSON.stringify(norm(JSON.parse(localStorage.getItem("sodual.v1"))))'), b = e.get('JSON.stringify(norm(JSON.parse(JSON.stringify(norm(JSON.parse(localStorage.getItem("sodual.v1")))))))');
+  assert.equal(a, b, 'norm é idempotente');
+  const c = JSON.parse(a).chars[0];
+  assert.equal(c.nucleo, 'Laranja'); assert.equal(c.mana, 5); assert.equal(c.manaMax, 11); assert.equal(c.post, 'Defensiva'); assert.equal(c.ca, undefined); eq(c.sk, { Atletismo: 2 });
+});
