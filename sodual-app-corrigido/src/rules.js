@@ -63,7 +63,8 @@ const PF_BAN=[['','Céu Astral','padrao'],['dragao-violeta','Dragão Violeta','d
 const PF_TIT=['Explorador do Continente','Guardião das Runas','Cronista de Sodual','Veterano de Campanha','Desbravador'];
 /* Insígnias: "livre" = escolha cosmética do jogador; as demais dependem de uma regra de obtenção que ainda não existe e ficam bloqueadas. */
 const PF_INS=[['explorador','Explorador','compass','livre'],['mestre','Mestre de Campanha','book','livre'],['fundador','Fundador','star','futura'],['veterano','Veterano','shield','futura']].map(([id,nome,ic,tipo])=>({id,nome,ic,tipo}));
-const PF_BIO_MAX=160,PF_INS_MAX=3;
+/* Biografia: até 600 caracteres (era 160). O limite é só do app: o perfil vai no JSON da conta, sem restrição no banco. Biografias antigas continuam válidas. */
+const PF_BIO_MAX=600,PF_INS_MAX=3;
 /* Texto simples: remove marcação e caracteres de controle; a interface sempre exibe como texto (React escapa). */
 function textoSimples(s,max){return String(s==null?'':s).replace(/<[^>]*>/g,'').replace(/[\u0000-\u0008\u000B-\u001F\u007F]/g,'').slice(0,max)}
 /* Completa o perfil sem apagar nada: valores fora dos catálogos viram "nenhum"; insígnias futuras nunca ficam ativas. */

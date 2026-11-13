@@ -77,9 +77,41 @@ const More=({c,act,nav,onClose})=>{const r=React.useRef(),u=S.set;
  React.useEffect(()=>{const f=e=>e.key=='Escape'&&onClose();addEventListener('keydown',f);const b=r.current&&r.current.querySelector('.bs-i.on,.bs-i');b&&b.focus({preventScroll:true});return()=>removeEventListener('keydown',f)},[]);
  const g=NAV(c).filter(x=>MORE_ORD.includes(x[0])).sort((a,b)=>MORE_ORD.indexOf(a[0])-MORE_ORD.indexOf(b[0]));
  return h`<div class="mdl bsh" onClick=${onClose}><div class="bs" id="bs-more" role="dialog" aria-modal="true" aria-label="Mais seções" ref=${r} onClick=${e=>e.stopPropagation()}><div class="bs-g" aria-hidden="true"></div>
- <button class=${'ub bs-u'+(act=='perfil'?' on':'')} aria-label=${u.nome+' — abrir perfil'} onClick=${()=>nav('perfil')}><${Avatar} img=${u.img} s=${40}/><span><b>${u.nome}</b><small>Ver perfil</small></span></button>
  <div class="bs-sy"><${SyncChip} det onClick=${()=>abrirSync(nav)}/></div>
- ${g.map(([cat,its])=>{const l=its.filter(x=>!BN_IDS.includes(x[0])&&x[0]!='perfil');return l.length?h`<section key=${cat}><div class="bs-c">${cat}</div><div class="bs-gr">${l.map(([id,lb,ic])=>h`<button key=${id} class=${'bs-i'+(act==id?' on':'')} aria-current=${act==id?'page':undefined} onClick=${()=>nav(id)}><${I} n=${ic} s=${20}/><span>${lb}</span></button>`)}</div></section>`:null})}</div></div>`};
+ ${g.map(([cat,its])=>{const l=its.filter(x=>!BN_IDS.includes(x[0]));return l.length?h`<section key=${cat}><div class="bs-c">${cat}</div><div class="bs-gr">${l.map(([id,lb,ic])=>h`<button key=${id} class=${'bs-i'+(act==id?' on':'')} aria-current=${act==id?'page':undefined} onClick=${()=>nav(id)}><${I} n=${ic} s=${20}/><span>${lb}</span></button>`)}</div></section>`:null})}</div></div>`};
+/* ===== Header global (Portal do Jogador; estrutura reaproveitável por um futuro Portal do Mestre via `portal`) =====
+   Esquerda: botão de recolher a barra lateral (desktop) + marca. Centro: reservado (ex.: futura campanha ativa). Direita: notificações
+   e menu da conta. Os dois popovers ficam ancorados na borda direita do header, então nunca saem da tela. */
+Object.assign(IC,{bell:'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9 M10.3 21a1.94 1.94 0 0 0 3.4 0',hdmenu:'M4 6h16 M4 12h16 M4 18h16'});
+/* Fecha um popover ao clicar fora ou com Esc (devolvendo o foco ao botão que o abriu). */
+function usePopover(aberto,fechar,caixa,botao){React.useEffect(()=>{if(!aberto)return;
+ const fora=e=>{if(caixa.current&&caixa.current.contains(e.target))return;if(botao.current&&botao.current.contains(e.target))return;fechar()},
+  tecla=e=>{if(e.key=='Escape'){e.stopPropagation();fechar();botao.current&&botao.current.focus()}};
+ document.addEventListener('pointerdown',fora);document.addEventListener('keydown',tecla,true);return()=>{document.removeEventListener('pointerdown',fora);document.removeEventListener('keydown',tecla,true)}},[aberto])}
+/* Notificações. AINDA NÃO HÁ BACKEND (nenhuma tabela, serviço ou Realtime): o componente só exibe o estado vazio.
+   Integração futura: passar itens [{id,titulo,texto,quando,lida,abrir}], naoLidas, carregando e erro (o resto já está pronto).
+   O indicador de não lidas só aparece com naoLidas > 0 vindo de dados reais. */
+const Notificacoes=({itens=[],naoLidas=0,carregando=false,erro='',aberto,setAberto})=>{const cx=React.useRef(),bt=React.useRef(),fechar=()=>setAberto(false);usePopover(aberto,fechar,cx,bt);
+ React.useEffect(()=>{if(aberto&&cx.current)cx.current.focus({preventScroll:true})},[aberto]);
+ return h`<button type="button" ref=${bt} class=${'hd-b'+(aberto?' on':'')} aria-label=${'Notificações'+(naoLidas>0?`, ${naoLidas} não lida(s)`:'')} aria-haspopup="dialog" aria-expanded=${aberto} aria-controls="hd-not" title="Notificações" onClick=${()=>setAberto(!aberto)}><${I} n="bell" s=${19}/>${naoLidas>0&&h`<span class="hd-dot" aria-hidden="true">${naoLidas>9?'9+':naoLidas}</span>`}</button>
+ ${aberto&&h`<div class="hd-pop hd-not" id="hd-not" role="dialog" aria-label="Notificações" tabIndex="-1" ref=${cx}><div class="hd-pop-h"><h2>Notificações</h2></div>
+  ${carregando?h`<p class="hd-vz" role="status">Carregando…</p>`:erro?h`<p class="hd-vz er" role="alert">${erro}</p>`:itens.length?h`<ul class="hd-nl">${itens.map(n=>h`<li key=${n.id} class=${n.lida?'':'nova'}><button type="button" onClick=${()=>{fechar();n.abrir&&n.abrir()}}><b>${n.titulo}</b>${n.texto&&h`<span>${n.texto}</span>`}${n.quando&&h`<small>${n.quando}</small>`}</button></li>`)}</ul>`
+  :h`<div class="hd-vz"><span class="hd-vz-ic" aria-hidden="true"><${I} n="bell" s=${22}/></span><p>Você não possui notificações no momento.</p><small>Convites e atualizações de campanhas aparecerão aqui.</small></div>`}</div>`}`};
+/* Menu da conta (avatar). Itens: Meu Perfil, Configurações e Sair (a mesma função sair() do restante do app). Setas, Home/End e Esc. */
+const MenuConta=({u,email,nav,aberto,setAberto})=>{const cx=React.useRef(),bt=React.useRef(),[saindo,ss]=React.useState(false),fechar=()=>setAberto(false);usePopover(aberto,fechar,cx,bt);
+ const itens=()=>cx.current?[...cx.current.querySelectorAll('[role=menuitem]')]:[];
+ React.useEffect(()=>{if(aberto){const l=itens();l[0]&&l[0].focus({preventScroll:true})}},[aberto]);
+ const tecla=e=>{const l=itens(),i=l.indexOf(document.activeElement);if(!l.length)return;const m={ArrowDown:(i+1)%l.length,ArrowUp:(i-1+l.length)%l.length,Home:0,End:l.length-1}[e.key];
+  if(m!=null){e.preventDefault();l[m].focus()}else if(e.key=='Tab')fechar()};
+ const ir=id=>{fechar();bt.current&&bt.current.focus({preventScroll:true});nav(id)};
+ return h`<button type="button" ref=${bt} class=${'hd-av'+(aberto?' on':'')} aria-label=${'Conta de '+(u.nome||'jogador')+' — abrir menu'} aria-haspopup="menu" aria-expanded=${aberto} aria-controls="hd-conta" onClick=${()=>setAberto(!aberto)}><${Avatar} img=${u.img} s=${34} ic=${17}/></button>
+ ${aberto&&h`<div class="hd-pop hd-conta" id="hd-conta" ref=${cx} onKeyDown=${tecla}><div class="hd-id"><${Avatar} img=${u.img} s=${46} ic=${22}/><div><b>${u.nome}</b>${email&&h`<small title=${email}>${email}</small>`}</div></div>
+  <div role="menu" aria-label="Conta"><button type="button" role="menuitem" onClick=${()=>ir('perfil')}><${I} n="user" s=${17}/>Meu Perfil</button><button type="button" role="menuitem" onClick=${()=>ir('config')}><${I} n="sliders" s=${17}/>Configurações</button>
+  <div class="hd-sep" role="separator"></div><button type="button" role="menuitem" class="hd-sair" disabled=${saindo} aria-busy=${saindo?'true':undefined} onClick=${async()=>{ss(true);if(!await sair())ss(false)}}><${I} n="logout" s=${17}/>${saindo?'Saindo…':'Sair da conta'}</button></div></div>`}`};
+const Topo=({portal='Portal do Jogador',col,tab,alternar,nav})=>{const[ab,sab]=React.useState(''),u=S.set,email=AU.u&&AU.u.email;
+ return h`<header class="hd noprint"><div class="hd-l">${!tab&&h`<button type="button" class="hd-b sb-tg" aria-label=${col?'Expandir menu':'Recolher menu'} title=${col?'Expandir menu':'Recolher menu'} onClick=${alternar}><${I} n=${col?'cr':'cl'} s=${18}/></button>`}<a class="hd-marca" href="#main" onClick=${e=>{e.preventDefault();nav('lore')}} aria-label="SODUAL — início"><span class="hd-sl" aria-hidden="true"><${I} n="flame" s=${16}/></span><span class="hd-nm">SODUAL</span></a><span class="hd-portal">${portal}</span></div>
+ <div class="hd-c"></div>
+ <div class="hd-r"><${Notificacoes} aberto=${ab=='not'} setAberto=${v=>sab(v?'not':'')}/><${MenuConta} u=${u} email=${email} nav=${nav} aberto=${ab=='conta'} setAberto=${v=>sab(v?'conta':'')}/></div></header>`};
 const App=()=>{const[,t]=React.useReducer(x=>x+1,0),[tip,st]=React.useState(null),[w,sw]=React.useState(1200),[more,smo]=React.useState(false),mr=React.useRef(),tab=useMQ(MQT);R=t;React.useEffect(applySet,[]);
  React.useEffect(()=>{const ro=new ResizeObserver(e=>sw(Math.round(e[0].contentRect.width)));mr.current&&ro.observe(mr.current);return()=>ro.disconnect()},[]);
  const c=me();if(c)ui.id=c.id;const v=ui.view=='wiz'&&c?'sheet':ui.view,col=!!S.set.col||tab,act=v=='wiz'?'sheet':v,nav=id=>{st(null);go(id,id=='sheet'?{tab:'ficha'}:{})},u=S.set,
@@ -93,8 +125,7 @@ const App=()=>{const[,t]=React.useReducer(x=>x+1,0),[tip,st]=React.useState(null
  else if(v=='rede')body=h`<${Net}/>`;
  else body=h`<${VIEW[v]||Lore}/>`;
  const inMore=!BN_IDS.includes(act);
- return h`<div class=${'app'+(col?' col':'')+(tab?' tab':'')+(w<1100?' wm':'')+(w<760?' ws':'')+(v=='rede'?' is-net':'')}><a class="skip" href="#main" onClick=${e=>{e.preventDefault();mr.current&&mr.current.focus()}}>Ir para o conteúdo</a><nav class="sb" aria-label="Navegação principal"><div class="sbh"><span class="lb">SODUAL</span><button class="b i sb-tg" style=${{marginLeft:'auto',background:'none',color:'#c9cffa'}} aria-label=${col?'Expandir menu':'Recolher menu'} onClick=${()=>{st(null);upd(()=>S.set.col=S.set.col?0:1)}}><${I} n=${col?'cr':'cl'} s=${18}/></button></div>
- <button class="ub" aria-label=${u.nome+' — abrir perfil'} onMouseEnter=${e=>tp(u.nome,e)} onMouseLeave=${()=>st(null)} onClick=${()=>nav('perfil')}><${Avatar} img=${u.img}/><span class="lb"><b style=${{display:'block',fontSize:'.9rem'}}>${u.nome}</b><small style=${{color:'#8f97d6'}}>Ver perfil</small></span></button>
+ return h`<div class=${'app'+(col?' col':'')+(tab?' tab':'')+(w<1100?' wm':'')+(w<760?' ws':'')+(v=='rede'?' is-net':'')}><a class="skip" href="#main" onClick=${e=>{e.preventDefault();mr.current&&mr.current.focus()}}>Ir para o conteúdo</a><${Topo} col=${col} tab=${tab} nav=${nav} alternar=${()=>{st(null);upd(()=>S.set.col=S.set.col?0:1)}}/><nav class="sb" aria-label="Navegação principal">
  <div class="sbn">${NAV(c).map(([cat,its])=>h`<div key=${cat}><div class="sbc">${cat}</div>${its.map(([id,l,ic])=>h`<button key=${id} class=${'ni'+(act==id?' on':'')} aria-label=${l} aria-current=${act==id?'page':undefined} onMouseEnter=${e=>tp(l,e)} onMouseLeave=${()=>st(null)} onFocus=${e=>tp(l,e)} onBlur=${()=>st(null)} onClick=${()=>nav(id)}><${I} n=${ic} s=${19}/><span class="lb">${l}</span></button>`)}</div>`)}</div><div class="sbf"><${SyncChip} onClick=${()=>abrirSync(nav)}/><span id="st"></span></div></nav><${MigrarNuvem}/><${ConflitoModal}/><${SyncAvisos}/>
  ${tip&&h`<div class="tip" style=${{top:tip.y,left:'calc(var(--sw) + 8px)'}}>${tip.l}</div>`}
  <main id="main" tabIndex="-1" aria-label=${lab} ref=${mr} class=${v=='rede'?'full':''}><${AP} mode="wait"><${MD} key=${v+(v=='sheet'?ui.tab:'')} initial=${{opacity:0,y:8}} animate=${{opacity:1,y:0}} exit=${{opacity:0}}>${body}<//><//></main><${Res}/>

@@ -56,6 +56,42 @@ Não desligue esses limites: eles protegem a conta dos jogadores contra força b
 - **Favicon:** `favicon.ico` na raiz (16 a 256 px, fundo transparente), referenciado em `index.html` como `favicon.ico?v=3`. Ao trocar o arquivo, aumente o `?v=` para furar o cache. O `vercel.json` manda revalidar `/favicon.ico`, e o `sodual-single.html` leva o ícone embutido.
 - **Aparência:** tema e cor de destaque ficam em Configurações › Aparência (valores em `S.set.theme` e `S.set.ac`, aplicados na hora por `applySet`).
 
+## Meu Perfil: apresentação × edição (4.5)
+- **`PerfilView`** (`src/perfil.js`) só apresenta os dados que recebe (nome, foto, perfil e jornada) e não lê a conta logada, para poder exibir no futuro o perfil de outro jogador.
+  - Ações de dono são opcionais: `avatarAcoes` (menu da foto) e `onEditar` (botão "Editar perfil").
+  - Mostra banner, avatar com moldura, nome, título, insígnias, "Sobre mim" e a Jornada, que agora fica dentro do card.
+  - Biografia vazia: "Este aventureiro ainda não escreveu sua história."
+- **`AvatarMenu`:** botão de câmera no avatar com Trocar foto, Enquadrar e Remover (com confirmação), usando as mesmas funções de imagem de antes. Funciona com teclado e toque, e fecha com Esc.
+- **`EditorPerfil`** (modal, sucessor do "Personalizar"): abas Informações (nome e "Sobre mim"), Foto e banner, Moldura, Título e Insígnias.
+  - Rascunho com prévia; "Salvar perfil" grava tudo de uma vez. A foto continua salva na hora.
+  - Fechar com alterações pendentes pede confirmação.
+  - Se `save()` falhar, nada é alterado e o erro aparece no modal.
+- **Layout** por container query (`pfcab`): em cards com menos de 640 px, tudo centralizado, com o avatar sobre a borda do banner; em cards maiores, avatar à esquerda, identidade ao lado e "Editar perfil" à direita. Só o avatar se sobrepõe ao banner.
+- Formato dos dados inalterado (`S.set.nome`, `S.set.img`, `S.set.perfil`).
+
+## Perfil responsivo e História sem barra de progresso (4.4)
+- **História do RPG:** a barra colorida de progresso no topo foi removida (elemento e CSS). A leitura da rolagem continua, porque o índice usa para destacar o capítulo atual e mostrar o "% lido".
+- **Meu Perfil:** o hero agora tem quatro blocos independentes: banner, identidade (avatar, nome, título e insígnias), biografia e personalização.
+  - O layout responde à largura do próprio card (container query `pfcab`), não à da janela. Funciona igual com a barra lateral aberta ou recolhida.
+  - Só o avatar avança sobre o banner; os textos começam sempre abaixo dele. Em cards muito estreitos tudo fica empilhado; com espaço, avatar à esquerda e textos à direita.
+  - O avatar mede 88, 104, 132 ou 172 px, conforme a largura.
+  - O banner segue a proporção do card, entre 112 e 210 px de altura.
+- **Biografia:** bloco próprio com toda a largura e quebras de linha preservadas, sem corte nem altura fixa. Limite ampliado de 160 para 600 caracteres (`PF_BIO_MAX`; biografias antigas continuam válidas). O campo de edição tem 7 linhas e pode ser esticado.
+
+## Header global (4.3)
+- **`Topo`** (`src/app.js`): header em todas as páginas autenticadas; não aparece na landing nem no login. Altura em `--hh` (56 px; 52 px no celular), descontada pela barra lateral, pela Rede e pelos elementos fixos (índice da História, colunas da ficha e do combate, abas no celular).
+  - Esquerda: botão de recolher a barra (desktop) e marca.
+  - Centro: reservado para uma futura campanha ativa.
+  - Direita: sino e avatar.
+  - Recebe `portal` ("Portal do Jogador"), para ser reaproveitado por um futuro Portal do Mestre.
+- **Menu da conta** (`MenuConta`): mostra foto, nome e e-mail e tem Meu Perfil, Configurações e Sair da conta, que usa a mesma função `sair()` do app.
+  - Fecha com Esc, clique fora ou ao escolher uma opção.
+  - Navegação por setas, Home e End.
+- **Notificações** (`Notificacoes`): **ainda não há backend** (nenhuma tabela, serviço ou Realtime). O painel mostra só o estado vazio, sem indicador de não lidas.
+  - Já aceita `itens`, `naoLidas`, `carregando` e `erro` para a integração futura.
+- **Barra lateral:** saíram a marca, que foi para o header, e o bloco do usuário. A folha "Mais" do celular também perdeu o bloco de perfil; "Meu perfil" continua na navegação e no menu da conta.
+- O fecho de popovers (`usePopover`) é próprio e simples, sem bibliotecas externas.
+
 ## Direção de arte 4.2
 - **Rede:** céu em três camadas de estrelas (`STARS`): ~80% minúsculas, ~15% pequenas e ~5% de destaque, com halo em gradiente e sem filtros de desfoque. As nebulosas (`NEB`) são gradientes de baixa opacidade. Só ~8 estrelas cintilam (`.stw`, lento).
   - A geometria astral fica só nos cantos (`SkyCanto`, tamanho fixo em px), e o centro fica limpo.

@@ -40,11 +40,25 @@ test('insígnias futuras (sem regra de obtenção) nunca ficam ativas; máximo d
   assert.ok(F.PF_INS.filter(x => x.tipo == 'futura').map(x => x.id).includes('fundador'));
 });
 
-test('biografia: texto simples, sem marcação, limitada a 160 caracteres', () => {
-  const p = F.normPerfil({ bio: '<img src=x onerror=alert(1)>Olá <b>mesa</b>\u0007' + 'x'.repeat(300) });
+test('biografia: texto simples, sem marcação, limitada a 600 caracteres (era 160)', () => {
+  const p = F.normPerfil({ bio: '<img src=x onerror=alert(1)>Olá <b>mesa</b>\u0007' + 'x'.repeat(900) });
   assert.equal(p.bio.includes('<'), false);
   assert.ok(p.bio.startsWith('Olá mesa'));
-  assert.equal(p.bio.length, 160);
+  assert.equal(F.PF_BIO_MAX, 600);
+  assert.equal(p.bio.length, 600);
+});
+
+test('biografia longa: parágrafos e quebras de linha preservados; biografia antiga (≤160) intacta; ida e volta pelo armazenamento', () => {
+  const longa = 'Primeiro parágrafo.\n\nSegundo parágrafo com uma linha\ne outra logo abaixo.\n\n' + 'Texto '.repeat(70);
+  const p = F.normPerfil({ bio: longa });
+  assert.ok(p.bio.includes('\n\n') && p.bio.includes('linha\ne outra'));
+  assert.equal(p.bio, longa.slice(0, 600));
+  const antiga = 'Bio curta de uma versão anterior, com até 160 caracteres.';
+  assert.equal(F.normPerfil({ bio: antiga }).bio, antiga);
+  const e = load();
+  vm.runInContext(`LS="sodual.v1.u.b";S.set.perfil=normPerfil({bio:${JSON.stringify(longa)}});save()`, e.ctx);
+  const e2 = load(e.mem); vm.runInContext('loadS("sodual.v1.u.b")', e2.ctx);
+  assert.equal(e2.get('S.set.perfil.bio'), longa.slice(0, 600));
 });
 
 test('perfil persiste e dados antigos ganham perfil vazio sem perder nada', () => {
